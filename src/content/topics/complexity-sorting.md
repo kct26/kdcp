@@ -47,6 +47,12 @@ int main() {
 ```
 
 ## Problems
+- [Vanya and Fence](https://codeforces.com/problemset/problem/677/A) Easy
+- [Fashion in Berland](https://codeforces.com/problemset/problem/691/A) Easy
+- [Easy Problem](https://codeforces.com/problemset/problem/2044/A) Easy
+- [Odd Divisor](https://codeforces.com/problemset/problem/1475/A) Easy
+- [Coin Piles](https://cses.fi/problemset/task/1754) Medium
+- [Alice in the Digital World](https://open.kattis.com/problems/alicedigital) Medium
 - [Distinct Numbers](https://cses.fi/problemset/task/1621) Easy
 - [Apartments](https://cses.fi/problemset/task/1084) Easy
 - [Ferris Wheel](https://cses.fi/problemset/task/1090) Easy
