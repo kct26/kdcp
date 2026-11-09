@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Ubuntu, Geist_Mono } from "next/font/google";
 import { Header } from "@/components/Header";
 import { CopyCode } from "@/components/CopyCode";
-import { themeScript } from "@/lib/theme";
 import "./globals.css";
 
 // Ubuntu is the UI font used by Kattis
@@ -16,10 +15,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${sans.variable} ${mono.variable}`} suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-      </head>
+    <html lang="en" className={`${sans.variable} ${mono.variable}`}>
       <body className="min-h-screen font-sans">
         <Header />
         {children}
