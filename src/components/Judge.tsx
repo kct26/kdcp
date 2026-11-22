@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { CodeEditor } from "./CodeEditor";
 
 /* Web judge: compiles and runs the submitted C++ on Compiler Explorer (godbolt.org)
    against tests generated at build time by judge/web/build_tests.py. */
@@ -18,7 +19,7 @@ using namespace std;
 int main() {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
-
+    
     return 0;
 }
 `;
@@ -187,18 +188,6 @@ export function Judge({ id }: { id: string }) {
     setBusy(false);
   }
 
-  const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Tab") {
-      e.preventDefault();
-      const el = e.currentTarget;
-      const { selectionStart: a, selectionEnd: b } = el;
-      const v = code.slice(0, a) + "    " + code.slice(b);
-      save(v);
-      requestAnimationFrame(() => el.setSelectionRange(a + 4, a + 4));
-    } else if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && !busy) {
-      submit();
-    }
-  };
 
   const passed = rows.filter((r) => r.verdict === "AC").length;
 
@@ -211,16 +200,7 @@ export function Judge({ id }: { id: string }) {
         </span>
       </div>
 
-      <textarea
-        value={code}
-        onChange={(e) => save(e.target.value)}
-        onKeyDown={onKeyDown}
-        spellCheck={false}
-        autoCapitalize="off"
-        autoCorrect="off"
-        aria-label="C++ source code"
-        className="mt-4 h-80 w-full resize-y rounded-lg border border-line bg-[#f6f7f9] p-4 font-mono text-[13px] leading-relaxed text-fg outline-none focus:border-head"
-      />
+      <CodeEditor value={code} onChange={save} onSubmit={() => !busy && submit()} />
 
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <button
