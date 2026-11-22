@@ -4,6 +4,7 @@ import { getExtras, getTopic } from "@/lib/content";
 import { renderMarkdown } from "@/lib/markdown";
 import { BackButton } from "@/components/BackButton";
 import { Judge } from "@/components/Judge";
+import { SplitView } from "@/components/SplitView";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -24,11 +25,10 @@ export default async function ExtraPage({ params }: Props) {
   const lesson = getTopic(e.lesson);
   const html = await renderMarkdown(e.body);
 
-  // Two panels like HackerRank: statement on the left, editor on the right.
-  // On large screens both fill the window below the header (56px + 3px stripe) and scroll separately.
-  return (
-    <main className="lg:grid lg:h-[calc(100dvh-59px)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
-      <section className="min-h-0 overflow-y-auto border-line bg-white lg:border-r">
+  // Two panels like HackerRank: statement on the left, editor on the right, with a draggable
+  // divider between them. On large screens both fill the window below the header and scroll separately.
+  const statement = (
+    <>
         <div className="border-b border-line px-6 pt-4">
           <div className="flex items-center gap-3">
             <BackButton />
@@ -49,8 +49,7 @@ export default async function ExtraPage({ params }: Props) {
           Prefer your own machine? Run <code className="font-mono">python3 judge/judge.py {e.id} my.cpp</code> from the
           project folder to test at full size.
         </p>
-      </section>
-      <Judge id={e.id} />
-    </main>
+    </>
   );
+  return <SplitView left={statement} right={<Judge id={e.id} />} />;
 }
