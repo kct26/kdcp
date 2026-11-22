@@ -91,10 +91,15 @@ body { background: var(--bg); -webkit-font-smoothing: antialiased; }
   display: inline-block; width: 2.25rem; margin-right: 1.1rem;
   text-align: right; color: #8b8e8c;
 }
-/* sample data and shell commands: no line numbers */
-.code.sample pre code, .code.shell pre code { padding-left: 1.1rem; }
+/* shell commands: no line numbers */
+.code.shell pre code { padding-left: 1.1rem; }
 .code.shell .line::before { content: none; }
-.code pre.plain { color: #c5c8c6; }
-.code.sample .copy { margin-left: auto; }
+/* sample input/output: light boxes like on Kattis/TopAlgo */
+.prose .sample-label { font-weight: 700; margin-top: 1.25rem; }
+.prose .sample-box {
+  margin-top: 0.5rem; padding: 0.9rem 1.25rem; overflow-x: auto;
+  background: #f6f7f9; border: 1px solid var(--line); border-radius: 10px;
+  font-family: var(--font-mono); font-size: 14px; line-height: 1.7; color: var(--fg);
+}
 
 aside, details > div { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }

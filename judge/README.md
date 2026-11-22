@@ -1,6 +1,16 @@
-# KDCP local judge
+# KDCP judge
 
-A judge for the extra practice problems, which have no online judge. It compiles your C++ solution, runs it on the sample plus random tests (small ones and ones at the maximum size), and compares your output with the reference solution token by token.
+There are two ways to judge the extra practice problems.
+
+## On the website
+
+Each problem page has a **Submit** box: paste C++ code and press Submit. The page runs the code on [Compiler Explorer](https://godbolt.org) (GCC 14, `-O2 -std=c++17`, 3 s per test) against 9 tests: the samples, 6 small random tests and 2 at full size. Small tests show the first wrong token; on large tests the program's output is checksummed inside the run (see `web/wrapper_tail.cpp`), because the runner returns at most 32 KB of output.
+
+The tests are generated from `gen.cpp` and `sol.cpp` by `python3 judge/web/build_tests.py`, which writes `public/judge/` (not committed). The deploy workflow runs it before every build; run it yourself before `npm run dev` to try the judge locally.
+
+## On your computer
+
+`judge.py` compiles your C++ solution, runs it on the sample plus random tests (small ones and ones at the maximum size), and compares your output with the reference solution token by token.
 
 Needs `python3` and a C++17 compiler (`g++` or `clang++`; set `CXX=clang++` to choose).
 

@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { getExtras, getTopic } from "@/lib/content";
 import { renderMarkdown } from "@/lib/markdown";
 import { BackButton } from "@/components/BackButton";
+import { Judge } from "@/components/Judge";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -22,9 +23,6 @@ export default async function ExtraPage({ params }: Props) {
   const e = find(id);
   const lesson = getTopic(e.lesson);
   const html = await renderMarkdown(e.body);
-  const judge = await renderMarkdown(
-    "```bash\n" + `python3 judge/judge.py ${e.id} my.cpp` + "\n```",
-  );
 
   return (
     <main>
@@ -39,14 +37,11 @@ export default async function ExtraPage({ params }: Props) {
 
       <article className="prose mt-8" dangerouslySetInnerHTML={{ __html: html }} />
 
-      <section className="mt-14 rounded-xl border border-line bg-card p-5 shadow-sm">
-        <h2 className="text-[1.05rem] font-medium tracking-tight">Judge your solution</h2>
-        <p className="mt-2 text-sm text-muted">
-          From the project folder, run your C++ file against the sample and random tests, including tests at the
-          maximum size. Output is compared token by token.
-        </p>
-        <div className="prose" dangerouslySetInnerHTML={{ __html: judge }} />
-      </section>
+      <Judge id={e.id} />
+      <p className="mt-3 text-xs text-muted">
+        Prefer your own machine? Run <code className="font-mono">python3 judge/judge.py {e.id} my.cpp</code> from the
+        project folder to test at full size.
+      </p>
     </main>
   );
 }

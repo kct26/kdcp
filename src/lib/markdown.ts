@@ -45,11 +45,7 @@ export async function renderMarkdown(md: string): Promise<string> {
       code({ text, lang }) {
         // Sample data blocks (```input / ```output) are shown as plain text
         if (lang === "input" || lang === "output") {
-          return `<div class="code sample">
-  <div class="code-bar">
-    <span class="code-file">${lang === "input" ? "Sample input" : "Sample output"}</span>
-    <button type="button" class="copy" data-copy>Copy</button>
-  </div><pre class="shiki plain"><code>${escape(text)}</code></pre></div>`;
+          return `<p class="sample-label">${lang === "input" ? "Input" : "Output"}</p><pre class="sample-box"><code>${escape(text)}</code></pre>`;
         }
         const shell = lang === "bash" || lang === "sh";
         const html = h.codeToHtml(text, { lang: shell ? "bash" : lang || "cpp", theme: "kattis-night" });

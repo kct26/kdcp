@@ -32,7 +32,7 @@ Levels are `Easy`, `Medium` or `Hard`. Topic order and months live in `src/conte
 
 ## Extra practice judge
 
-The extra problems (one set per session) have no online judge, so this repo includes one. Judge your C++ solution locally:
+The extra problems (one set per session) are judged on their own page: paste C++ code and press **Submit**. Tests come from `judge/web/build_tests.py`, which the deploy workflow runs before building; run it locally before `npm run dev` to try the judge there. You can also judge on your own machine:
 
 ```bash
 python3 judge/judge.py --list
