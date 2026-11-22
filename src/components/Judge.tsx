@@ -2,9 +2,9 @@
 import { useEffect, useRef, useState } from "react";
 import { CodeEditor } from "./CodeEditor";
 
-/* HackerRank-style workspace: editor, Run Code (samples) and Submit Code (all tests).
-   Code is compiled and run on Compiler Explorer (godbolt.org) against tests generated
-   at build time by judge/web/build_tests.py. */
+/* LeetCode-style code + test panels. Run (sample cases) and Submit (all cases) compile and run
+   the code on Compiler Explorer (godbolt.org) against tests generated at build time by
+   judge/web/build_tests.py. */
 
 type Test = { name: string; input: string; bytes: number; output?: string; count?: number; hash?: string };
 type Manifest = { id: string; tests: Test[] };
@@ -23,7 +23,8 @@ type Result = {
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const COMPILER = "g142"; // GCC 14.2
 const TIME_LIMIT_MS = 3000;
-const SHOW_LIMIT = 6000; // characters of input/output shown per test
+const SHOW_LIMIT = 6000; // characters of input/output shown per case
+const HEADER_PX = 41; // height of a panel header
 const TEMPLATE = `#include <bits/stdc++.h>
 using namespace std;
 
@@ -36,20 +37,22 @@ int main() {
 `;
 
 const LABEL: Record<Verdict, string> = {
-  waiting: "Waiting",
+  waiting: "Pending",
   skipped: "Not run",
   running: "Running",
   AC: "Accepted",
   WA: "Wrong Answer",
   TLE: "Time Limit Exceeded",
   RE: "Runtime Error",
-  CE: "Compilation Error",
+  CE: "Compile Error",
   ERR: "Judge Unavailable",
 };
 
 const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*[A-Za-z]/g, "");
 const lines = (a?: { text: string }[]) => (a ?? []).map((l) => l.text).join("\n");
 const clip = (s: string) => (s.length > SHOW_LIMIT ? s.slice(0, SHOW_LIMIT) + "\n…" : s);
+const caseName = (name: string, i: number, all: { name: string }[]) =>
+  all.every((t) => t.name.startsWith("Sample")) ? `Case ${i + 1}` : name;
 
 async function runOnCompilerExplorer(source: string, stdin: string) {
   const res = await fetch(`https://godbolt.org/api/compiler/${COMPILER}/compile`, {
@@ -80,60 +83,106 @@ function firstDiff(expected: string[], got: string[]) {
   return `Expected ${expected.length} tokens, got ${got.length}.`;
 }
 
-function Icon({ v }: { v: Verdict }) {
+/* ---------- small pieces ---------- */
+
+function CaseIcon({ v }: { v: Verdict }) {
   if (v === "AC")
     return (
-      <svg viewBox="0 0 16 16" className="size-4 shrink-0 text-easy" fill="currentColor" aria-hidden>
-        <path d="M8 1a7 7 0 100 14A7 7 0 008 1zm3.3 5.2l-3.8 4.3a.75.75 0 01-1.1 0L4.7 8.8a.75.75 0 111.1-1l1.2 1.3 3.2-3.6a.75.75 0 111.1 1z" />
+      <svg viewBox="0 0 16 16" className="size-3.5 shrink-0" aria-hidden>
+        <rect width="16" height="16" rx="3" fill="#2cbb5d" />
+        <path d="M4.5 8.3l2.3 2.2 4.7-5" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     );
-  if (v === "running")
-    return <span className="size-3.5 shrink-0 animate-spin rounded-full border-2 border-head border-t-transparent" />;
-  if (v === "waiting" || v === "skipped") return <span className="size-3.5 shrink-0 rounded-full border-2 border-line" />;
+  if (v === "running") return <span className="size-3.5 shrink-0 animate-spin rounded-full border-2 border-[#1a90ff] border-t-transparent" />;
+  if (v === "waiting" || v === "skipped") return <span className="size-3.5 shrink-0 rounded-[3px] border-2 border-[#d0d0d0]" />;
   return (
-    <svg viewBox="0 0 16 16" className={`size-4 shrink-0 ${v === "TLE" ? "text-medium" : "text-hard"}`} fill="currentColor" aria-hidden>
-      <path d="M8 1a7 7 0 100 14A7 7 0 008 1zm2.5 8.4a.75.75 0 11-1.1 1.1L8 9.1l-1.4 1.4a.75.75 0 11-1.1-1.1L6.9 8 5.5 6.6a.75.75 0 111.1-1.1L8 6.9l1.4-1.4a.75.75 0 111.1 1.1L9.1 8l1.4 1.4z" />
+    <svg viewBox="0 0 16 16" className="size-3.5 shrink-0" aria-hidden>
+      <rect width="16" height="16" rx="3" fill={v === "TLE" ? "#ffa116" : "#ef4743"} />
+      <path d="M5.2 5.2l5.6 5.6M10.8 5.2l-5.6 5.6" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" />
     </svg>
   );
 }
 
-function Block({ title, children }: { title: string; children: React.ReactNode }) {
+function Field({ label, children, tone }: { label: string; children: React.ReactNode; tone?: "error" }) {
   return (
     <div>
-      <p className="mb-1.5 text-[13px] font-bold text-fg">{title}</p>
-      <pre className="max-h-48 overflow-auto rounded-md border border-line bg-[#f6f7f9] px-3 py-2 font-mono text-[13px] leading-relaxed whitespace-pre-wrap">
+      <p className="mb-2 text-xs font-medium text-[#8c8c8c]">{label}</p>
+      <pre
+        className={`max-h-56 overflow-auto rounded-lg px-4 py-3 font-mono text-[13px] leading-relaxed whitespace-pre-wrap ${
+          tone === "error" ? "bg-[#fdeceb] text-[#c42b27]" : "bg-[#f7f7f8] text-fg"
+        }`}
+      >
         {children}
       </pre>
     </div>
   );
 }
 
+function Pills({
+  items,
+  selected,
+  onSelect,
+  icons,
+}: {
+  items: { name: string; verdict?: Verdict }[];
+  selected: number;
+  onSelect: (i: number) => void;
+  icons: boolean;
+}) {
+  return (
+    <div role="tablist" className="flex flex-wrap gap-2">
+      {items.map((it, i) => (
+        <button
+          key={it.name}
+          type="button"
+          role="tab"
+          aria-selected={i === selected}
+          onClick={() => onSelect(i)}
+          className={`flex items-center gap-2 rounded-lg px-4 py-1.5 text-[13px] font-medium transition-colors ${
+            i === selected ? "bg-[#ebebeb] text-fg" : "text-[#8c8c8c] hover:bg-[#f5f5f5] hover:text-fg"
+          }`}
+        >
+          {icons && it.verdict && <CaseIcon v={it.verdict} />}
+          {caseName(it.name, i, items)}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function PanelTab({ active, onClick, icon, children }: { active: boolean; onClick: () => void; icon: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex items-center gap-1.5 rounded-md px-2 py-1 text-[13px] transition-colors hover:bg-[#ebebeb] ${
+        active ? "font-bold text-fg" : "text-[#8c8c8c]"
+      }`}
+    >
+      {icon}
+      {children}
+    </button>
+  );
+}
+
+/* ---------- main ---------- */
+
 export function Judge({ id }: { id: string }) {
   const key = `kdcp-code:${id}`;
   const [code, setCode] = useState(TEMPLATE);
+  const [samples, setSamples] = useState<{ name: string; input: string }[]>([]);
   const [results, setResults] = useState<Result[] | null>(null);
   const [mode, setMode] = useState<"run" | "submit">("run");
   const [busy, setBusy] = useState(false);
-  const [selected, setSelected] = useState(0);
-  const [open, setOpen] = useState(false);
-  const [panelH, setPanelH] = useState<number | null>(null); // results panel height in px (desktop); null = default
-  const workspace = useRef<HTMLDivElement>(null);
-  const panel = useRef<HTMLDivElement>(null);
+  const [tab, setTab] = useState<"testcase" | "result">("testcase");
+  const [sampleSel, setSampleSel] = useState(0);
+  const [resultSel, setResultSel] = useState(0);
+  const [testsH, setTestsH] = useState<number | null>(null); // bottom panel height in px; null = default
+  const [collapsed, setCollapsed] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const column = useRef<HTMLDivElement>(null);
+  const bottom = useRef<HTMLDivElement>(null);
   const cache = useRef(new Map<string, string>());
-
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(key);
-      if (saved) setCode(saved);
-    } catch {}
-  }, [key]);
-
-  const save = (v: string) => {
-    setCode(v);
-    try {
-      localStorage.setItem(key, v);
-    } catch {}
-  };
 
   const fetchText = async (path: string) => {
     if (!cache.current.has(path)) {
@@ -144,12 +193,68 @@ export function Judge({ id }: { id: string }) {
     return cache.current.get(path)!;
   };
 
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(key);
+      if (saved) setCode(saved);
+      const h = Number(localStorage.getItem("kdcp-split-tests"));
+      if (h >= 41) setTestsH(h);
+    } catch {}
+    // show the sample inputs in the Testcase tab
+    (async () => {
+      try {
+        const m: Manifest = JSON.parse(await fetchText(`${id}/manifest.json`));
+        const s = m.tests.filter((t) => t.name.startsWith("Sample"));
+        setSamples(await Promise.all(s.map(async (t) => ({ name: t.name, input: await fetchText(`${id}/${t.input}`) }))));
+      } catch {}
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
+
+  const save = (v: string) => {
+    setCode(v);
+    try {
+      localStorage.setItem(key, v);
+    } catch {}
+  };
+
+  /* ---- resizing the code / tests split ---- */
+  const clampH = (h: number) => Math.max(HEADER_PX, Math.min(h, (column.current?.clientHeight ?? 800) - 140));
+  const setHeight = (h: number | null) => {
+    setTestsH(h);
+    setCollapsed(false);
+    try {
+      if (h === null) localStorage.removeItem("kdcp-split-tests");
+      else localStorage.setItem("kdcp-split-tests", String(h));
+    } catch {}
+  };
+  const startResize = (e: React.PointerEvent) => {
+    e.preventDefault();
+    setDragging(true);
+    const startY = e.clientY;
+    const startH = bottom.current?.offsetHeight ?? 300;
+    const move = (ev: PointerEvent) => setHeight(clampH(startH - (ev.clientY - startY)));
+    const up = () => {
+      setDragging(false);
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+    document.body.style.cursor = "row-resize";
+    document.body.style.userSelect = "none";
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+
+  /* ---- judging ---- */
   async function judge(which: "run" | "submit") {
     if (busy) return;
     setBusy(true);
     setMode(which);
-    setSelected(0);
-    setOpen(true);
+    setResultSel(0);
+    setTab("result");
+    setCollapsed(false);
     let tests: Test[];
     try {
       const manifest: Manifest = JSON.parse(await fetchText(`${id}/manifest.json`));
@@ -170,7 +275,6 @@ export function Judge({ id }: { id: string }) {
     for (let i = 0; i < tests.length && !failed; i++) {
       const t = tests[i];
       update(i, { verdict: "running" });
-      setSelected(i);
       try {
         const stdin = await fetchText(`${id}/${t.input}`);
         const big = t.hash !== undefined;
@@ -203,10 +307,10 @@ export function Judge({ id }: { id: string }) {
             verdict: ok ? "AC" : "WA",
             ms,
             message: ok
-              ? "Your output matches the expected output."
+              ? undefined
               : m && Number(m[1]) !== t.count
                 ? `Expected ${t.count} tokens, got ${m[1]}.`
-                : "Your output differs from the expected output. This test is too large to show the difference.",
+                : "Your output differs from the expected output. This case is too large to show the difference.",
           });
           failed = !ok;
         } else {
@@ -217,206 +321,225 @@ export function Judge({ id }: { id: string }) {
             verdict: ok ? "AC" : "WA",
             ms,
             got: clip(out),
-            message: ok ? "Success" : r.truncated ? "Your program printed far more output than expected." : firstDiff(exp, got),
+            message: ok ? undefined : r.truncated ? "Your program printed far more output than expected." : firstDiff(exp, got),
             ...shown,
           });
           failed = !ok;
         }
+        if (failed) setResultSel(i);
       } catch (e) {
         update(i, { verdict: "ERR", message: `Could not reach the runner: ${(e as Error).message}. Try again in a moment.` });
         failed = true;
+        setResultSel(i);
       }
     }
     table.forEach((r, i) => r.verdict === "waiting" && update(i, { verdict: "skipped" }));
     setBusy(false);
   }
 
-  const clampH = (h: number) => {
-    const total = workspace.current?.clientHeight ?? 800;
-    return Math.max(96, Math.min(h, total - 160)); // keep some editor visible
-  };
-  const startResize = (e: React.PointerEvent) => {
-    e.preventDefault();
-    const startY = e.clientY;
-    const startH = panel.current?.offsetHeight ?? 300;
-    const move = (ev: PointerEvent) => setPanelH(clampH(startH - (ev.clientY - startY)));
-    const up = () => {
-      window.removeEventListener("pointermove", move);
-      window.removeEventListener("pointerup", up);
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-    };
-    document.body.style.cursor = "row-resize";
-    document.body.style.userSelect = "none";
-    window.addEventListener("pointermove", move);
-    window.addEventListener("pointerup", up);
-  };
-  const resizeByKey = (e: React.KeyboardEvent) => {
-    if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
-    e.preventDefault();
-    const h = panel.current?.offsetHeight ?? 300;
-    setPanelH(clampH(h + (e.key === "ArrowUp" ? 32 : -32)));
-  };
-
   const done = !!results && !busy;
   const passed = results?.filter((r) => r.verdict === "AC").length ?? 0;
   const allPassed = done && passed === results!.length;
   const firstBad = results?.find((r) => !["AC", "skipped", "waiting"].includes(r.verdict));
-  const current = results?.[selected];
+  const runtime = results ? Math.max(0, ...results.map((r) => r.ms ?? 0)) : 0;
+  const current = results?.[resultSel];
+
+  const bottomStyle = {
+    "--tests-h": collapsed ? `${HEADER_PX}px` : testsH ? `${testsH}px` : "42%",
+  } as React.CSSProperties;
 
   return (
-    <div ref={workspace} className="flex min-h-0 flex-col bg-white lg:h-full">
-      {/* toolbar */}
-      <div className="flex items-center justify-between border-b border-line px-4 py-2">
-        <span className="rounded-md border border-line px-2.5 py-1 text-[13px] font-medium">C++17</span>
-        <div className="flex items-center gap-3 text-xs text-muted">
-          <span className="hidden sm:inline">GCC 14 · -O2 · {TIME_LIMIT_MS / 1000} s</span>
-          <button
-            type="button"
-            onClick={() => save(TEMPLATE)}
-            disabled={busy}
-            title="Reset to the starter code"
-            className="rounded-md border border-line px-2.5 py-1 text-fg transition-colors hover:bg-soft"
-          >
-            Reset
-          </button>
-        </div>
-      </div>
-
-      {/* editor */}
-      <CodeEditor
-        value={code}
-        onChange={save}
-        onSubmit={() => judge("submit")}
-        className="h-[26rem] border-b border-line lg:h-auto lg:flex-1"
-      />
-
-      {/* results */}
-      {results && open && (
-        <div
-          role="separator"
-          aria-orientation="horizontal"
-          aria-label="Resize the results panel"
-          tabIndex={0}
-          onPointerDown={startResize}
-          onKeyDown={resizeByKey}
-          onDoubleClick={() => setPanelH(null)}
-          title="Drag to resize · double-click to reset"
-          className="hidden h-2.5 shrink-0 cursor-row-resize touch-none items-center justify-center border-b border-line bg-[#f3f5f7] outline-none transition-colors hover:bg-[#e8eef6] focus-visible:bg-[#e8eef6] lg:flex"
-        >
-          <span className="h-1 w-10 rounded-full bg-[#c2c7d0]" />
-        </div>
-      )}
-      {results && open && (
-        <div
-          ref={panel}
-          style={{ "--results-h": panelH ? `${panelH}px` : "45%" } as React.CSSProperties}
-          className="shrink-0 overflow-auto border-b border-line px-4 pb-4 pt-3 lg:h-[var(--results-h)]"
-        >
-          <div className="flex items-start justify-between gap-3">
-            {done ? (
-              <div>
-                <p className={`text-lg font-bold ${allPassed ? "text-easy" : "text-hard"}`}>
-                  {allPassed
-                    ? mode === "run"
-                      ? "Congratulations! You passed the sample test cases."
-                      : "Congratulations! You passed all test cases."
-                    : LABEL[firstBad?.verdict ?? "WA"]}
-                </p>
-                <p className="mt-0.5 text-[13px] text-muted">
-                  {passed}/{results.length} test cases passed
-                  {allPassed && mode === "run" ? ". Click Submit Code to run all tests." : ""}
-                </p>
-              </div>
-            ) : (
-              <p className="py-1 text-sm font-bold text-muted">
-                {mode === "run" ? "Running the sample test cases…" : "Judging all test cases…"}
-              </p>
-            )}
+    <div ref={column} className="flex min-h-0 flex-1 flex-col gap-2 lg:gap-0">
+      {/* ---------- Code card ---------- */}
+      <section className="flex min-h-0 flex-col overflow-hidden rounded-lg border border-[#e5e5e5] bg-white lg:flex-1">
+        <div className="flex h-[41px] shrink-0 items-center justify-between gap-2 border-b border-[#eee] bg-[#fafafa] px-3">
+          <div className="flex items-center gap-3">
+            <span className="flex items-center gap-1.5 text-[13px] font-bold">
+              <svg viewBox="0 0 16 16" className="size-4 text-[#2cbb5d]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M5.5 4.5L2 8l3.5 3.5M10.5 4.5L14 8l-3.5 3.5M9 3l-2 10" />
+              </svg>
+              Code
+            </span>
+            <span className="text-[13px] text-[#8c8c8c]" title="GCC 14 · -O2 · 3 s per test">
+              C++17
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
             <button
               type="button"
-              onClick={() => setOpen(false)}
-              aria-label="Close results"
-              title="Close"
-              className="grid size-8 shrink-0 place-items-center rounded-md text-muted transition-colors hover:bg-soft hover:text-fg"
+              onClick={() => save(TEMPLATE)}
+              disabled={busy}
+              title="Reset to the starter code"
+              className="rounded-md px-2 py-1 text-[13px] text-[#8c8c8c] transition-colors hover:bg-[#ebebeb] hover:text-fg"
             >
-              <svg viewBox="0 0 16 16" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
-                <path d="M4 4l8 8M12 4l-8 8" />
+              Reset
+            </button>
+            <button
+              type="button"
+              onClick={() => judge("run")}
+              disabled={busy}
+              title="Run the sample cases"
+              className="flex items-center gap-1.5 rounded-md bg-[#ebebeb] px-3 py-1 text-[13px] font-medium text-fg transition-colors hover:bg-[#e0e0e0] disabled:opacity-60"
+            >
+              <svg viewBox="0 0 16 16" className="size-3" fill="currentColor" aria-hidden>
+                <path d="M4 2.8v10.4a.6.6 0 00.9.5l8.3-5.2a.6.6 0 000-1L4.9 2.3a.6.6 0 00-.9.5z" />
               </svg>
+              {busy && mode === "run" ? "Running…" : "Run"}
+            </button>
+            <button
+              type="button"
+              onClick={() => judge("submit")}
+              disabled={busy}
+              title="Submit (Cmd/Ctrl + Enter)"
+              className="flex items-center gap-1.5 rounded-md bg-[#2cbb5d] px-3 py-1 text-[13px] font-bold text-white transition-colors hover:bg-[#25a551] disabled:opacity-60"
+            >
+              <svg viewBox="0 0 16 16" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M8 11V3M4.5 6.5L8 3l3.5 3.5M3 13h10" />
+              </svg>
+              {busy && mode === "submit" ? "Judging…" : "Submit"}
             </button>
           </div>
-
-          {/* test cases as tabs in one row */}
-          <div role="tablist" className="mt-3 flex flex-wrap gap-x-1 border-b border-line">
-            {results.map((r, i) => (
-              <button
-                key={r.name}
-                type="button"
-                role="tab"
-                aria-selected={i === selected}
-                onClick={() => setSelected(i)}
-                className={`-mb-px flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2 text-[13px] transition-colors ${
-                  i === selected ? "border-[#1ba94c] font-bold text-fg" : "border-transparent text-muted hover:text-fg"
-                }`}
-              >
-                <Icon v={r.verdict} />
-                {r.name}
-              </button>
-            ))}
-          </div>
-
-          {current && (
-            <div className="mt-4 space-y-3">
-              <Block title="Compiler Message">
-                {current.verdict === "waiting" || current.verdict === "running"
-                  ? LABEL[current.verdict] + "…"
-                  : current.verdict === "skipped"
-                    ? "Not run, because an earlier test case failed."
-                    : `${current.verdict === "AC" ? "" : LABEL[current.verdict] + "\n"}${current.message ?? ""}`.trim()}
-                {current.ms !== undefined ? `\n(${current.ms} ms)` : ""}
-              </Block>
-              {current.input !== undefined ? (
-                <Block title="Input (stdin)">{current.input}</Block>
-              ) : (
-                current.inputBytes > 0 && (
-                  <p className="text-[13px] text-muted">Input is {(current.inputBytes / 1e6).toFixed(1)} MB, too large to show.</p>
-                )
-              )}
-              {current.got !== undefined && <Block title="Your Output (stdout)">{current.got || " "}</Block>}
-              {current.expected !== undefined && <Block title="Expected Output">{current.expected}</Block>}
-            </div>
-          )}
         </div>
-      )}
+        <CodeEditor value={code} onChange={save} onSubmit={() => judge("submit")} className="h-[24rem] lg:h-auto lg:flex-1" />
+      </section>
 
-      {/* actions */}
-      <div className="flex shrink-0 items-center justify-between gap-3 px-4 py-3">
-        {results && !open ? (
-          <button type="button" onClick={() => setOpen(true)} className="text-xs font-bold text-link hover:underline">
-            Show results ({passed}/{results.length})
-          </button>
-        ) : (
-          <span className="hidden text-xs text-muted sm:inline">Runs on godbolt.org (Compiler Explorer)</span>
-        )}
-        <div className="ml-auto flex gap-2">
-          <button
-            type="button"
-            onClick={() => judge("run")}
-            disabled={busy}
-            className="rounded-md border border-[#c2c7d0] bg-white px-4 py-2 text-sm font-bold text-fg transition-colors hover:bg-soft disabled:opacity-60"
-          >
-            {busy && mode === "run" ? "Running…" : "Run Code"}
-          </button>
-          <button
-            type="button"
-            onClick={() => judge("submit")}
-            disabled={busy}
-            className="rounded-md bg-[#1ba94c] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-[#178f41] disabled:opacity-60"
-          >
-            {busy && mode === "submit" ? "Judging…" : "Submit Code"}
-          </button>
-        </div>
+      {/* ---------- divider ---------- */}
+      <div
+        role="separator"
+        aria-orientation="horizontal"
+        aria-label="Resize the code and test panels"
+        tabIndex={0}
+        onPointerDown={startResize}
+        onDoubleClick={() => setHeight(null)}
+        onKeyDown={(e) => {
+          if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+          e.preventDefault();
+          setHeight(clampH((bottom.current?.offsetHeight ?? 300) + (e.key === "ArrowUp" ? 32 : -32)));
+        }}
+        title="Drag to resize · double-click to reset"
+        className="group hidden h-2 shrink-0 cursor-row-resize touch-none items-center outline-none lg:flex"
+      >
+        <span
+          className={`mx-1 h-[3px] w-full rounded-full transition-colors group-hover:bg-[#1a90ff] group-focus-visible:bg-[#1a90ff] ${
+            dragging ? "bg-[#1a90ff]" : "bg-transparent"
+          }`}
+        />
       </div>
+
+      {/* ---------- Testcase / Test Result card ---------- */}
+      <section
+        ref={bottom}
+        style={bottomStyle}
+        className="flex min-h-0 shrink-0 flex-col overflow-hidden rounded-lg border border-[#e5e5e5] bg-white lg:h-[var(--tests-h)]"
+      >
+        <div className="flex h-[41px] shrink-0 items-center justify-between border-b border-[#eee] bg-[#fafafa] px-2">
+          <div className="flex items-center gap-1">
+            <PanelTab
+              active={tab === "testcase"}
+              onClick={() => (setTab("testcase"), setCollapsed(false))}
+              icon={
+                <svg viewBox="0 0 16 16" className="size-4 text-[#2cbb5d]" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden>
+                  <rect x="2.5" y="2.5" width="11" height="11" rx="2" />
+                  <path d="M5.5 8.2l1.7 1.6 3.3-3.6" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              }
+            >
+              Testcase
+            </PanelTab>
+            <span className="h-4 w-px bg-[#e0e0e0]" />
+            <PanelTab
+              active={tab === "result"}
+              onClick={() => (setTab("result"), setCollapsed(false))}
+              icon={
+                <svg viewBox="0 0 16 16" className="size-4 text-[#2cbb5d]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M2.5 4l4 4-4 4M8 12.5h5.5" />
+                </svg>
+              }
+            >
+              Test Result
+            </PanelTab>
+          </div>
+          <button
+            type="button"
+            onClick={() => setCollapsed(!collapsed)}
+            aria-label={collapsed ? "Expand the test panel" : "Collapse the test panel"}
+            title={collapsed ? "Expand" : "Collapse"}
+            className="grid size-7 place-items-center rounded-md text-[#8c8c8c] transition-colors hover:bg-[#ebebeb] hover:text-fg"
+          >
+            <svg viewBox="0 0 16 16" className={`size-4 transition-transform ${collapsed ? "rotate-180" : ""}`} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M4 6l4 4 4-4" />
+            </svg>
+          </button>
+        </div>
+
+        {!collapsed && (
+          <div className="min-h-0 flex-1 overflow-auto px-5 py-4">
+            {tab === "testcase" ? (
+              samples.length === 0 ? (
+                <p className="text-[13px] text-[#8c8c8c]">Loading test cases…</p>
+              ) : (
+                <div className="space-y-4">
+                  <Pills items={samples} selected={sampleSel} onSelect={setSampleSel} icons={false} />
+                  <Field label="Input">{samples[sampleSel]?.input}</Field>
+                </div>
+              )
+            ) : !results ? (
+              <p className="pt-6 text-center text-[13px] text-[#8c8c8c]">You must run your code first.</p>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                  {done ? (
+                    <>
+                      <h3 className={`text-2xl font-bold ${allPassed ? "text-[#2cbb5d]" : "text-[#ef4743]"}`}>
+                        {allPassed ? "Accepted" : LABEL[firstBad?.verdict ?? "WA"]}
+                      </h3>
+                      <span className="text-[13px] text-[#8c8c8c]">Runtime: {runtime} ms</span>
+                      {mode === "submit" && (
+                        <span className="text-[13px] text-[#8c8c8c]">
+                          {passed} / {results.length} testcases passed
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <h3 className="text-lg font-bold text-[#8c8c8c]">
+                      {mode === "run" ? "Running…" : "Judging…"} {passed}/{results.length}
+                    </h3>
+                  )}
+                </div>
+
+                <Pills items={results} selected={resultSel} onSelect={setResultSel} icons />
+
+                {current && (
+                  <div className="space-y-4">
+                    {current.message && ["CE", "RE", "TLE", "ERR"].includes(current.verdict) && (
+                      <Field label={LABEL[current.verdict]} tone="error">
+                        {current.message}
+                      </Field>
+                    )}
+                    {current.verdict === "skipped" && <p className="text-[13px] text-[#8c8c8c]">Not run, because an earlier case failed.</p>}
+                    {current.input !== undefined ? (
+                      <Field label="Input">{current.input}</Field>
+                    ) : (
+                      current.inputBytes > 0 &&
+                      current.verdict !== "skipped" && (
+                        <p className="text-[13px] text-[#8c8c8c]">
+                          Input is {(current.inputBytes / 1e6).toFixed(1)} MB, too large to show.
+                          {current.verdict === "AC" ? " Your output matches the expected output." : ""}
+                        </p>
+                      )
+                    )}
+                    {current.got !== undefined && <Field label="Output">{current.got || " "}</Field>}
+                    {current.expected !== undefined && <Field label="Expected">{current.expected}</Field>}
+                    {current.verdict === "WA" && current.message && (
+                      <p className="text-[13px] text-[#ef4743]">{current.message}</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </section>
     </div>
   );
 }

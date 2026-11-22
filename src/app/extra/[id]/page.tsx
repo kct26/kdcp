@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { getExtras, getTopic } from "@/lib/content";
 import { renderMarkdown } from "@/lib/markdown";
 import { BackButton } from "@/components/BackButton";
-import { Judge } from "@/components/Judge";
+import { Workspace } from "@/components/Workspace";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -24,33 +24,35 @@ export default async function ExtraPage({ params }: Props) {
   const lesson = getTopic(e.lesson);
   const html = await renderMarkdown(e.body);
 
-  // Two panels like HackerRank: statement on the left, editor on the right.
-  // On large screens both fill the window below the header (56px + 3px stripe) and scroll separately.
-  return (
-    <main className="lg:grid lg:h-[calc(100dvh-59px)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
-      <section className="min-h-0 overflow-y-auto border-line bg-white lg:border-r">
-        <div className="border-b border-line px-6 pt-4">
-          <div className="flex items-center gap-3">
-            <BackButton />
-            <p className="truncate font-mono text-xs text-muted">
-              Session {e.session} extra ·{" "}
-              <Link href={`/learn/${e.lesson}`} className="hover:text-fg hover:underline hover:underline-offset-4">
-                {lesson.title}
-              </Link>
-            </p>
-          </div>
-          <h1 className="mt-4 text-2xl font-bold tracking-tight">{e.title}</h1>
-          <nav className="mt-3 flex gap-6 text-sm">
-            <span className="border-b-2 border-[#1ba94c] pb-2 font-bold">Problem</span>
-          </nav>
+  const description = (
+    <div className="flex h-full flex-col">
+      <div className="flex h-[41px] shrink-0 items-center gap-1.5 border-b border-[#eee] bg-[#fafafa] px-4 text-[13px] font-bold">
+        <svg viewBox="0 0 16 16" className="size-4 text-[#1a90ff]" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" aria-hidden>
+          <rect x="3" y="2" width="10" height="12" rx="1.5" />
+          <path d="M5.5 5.5h5M5.5 8h5M5.5 10.5h3" />
+        </svg>
+        Description
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+        <div className="flex items-center gap-3">
+          <BackButton />
+          <p className="truncate font-mono text-xs text-muted">
+            Session {e.session} extra ·{" "}
+            <Link href={`/learn/${e.lesson}`} className="hover:text-fg hover:underline hover:underline-offset-4">
+              {lesson.title}
+            </Link>
+          </p>
         </div>
-        <article className="prose px-6 py-6" dangerouslySetInnerHTML={{ __html: html }} />
-        <p className="px-6 pb-8 text-xs text-muted">
+        <h1 className="mt-5 text-2xl font-bold tracking-tight">{e.title}</h1>
+        <article className="prose mt-4" dangerouslySetInnerHTML={{ __html: html }} />
+        <p className="mt-8 text-xs text-muted">
           Prefer your own machine? Run <code className="font-mono">python3 judge/judge.py {e.id} my.cpp</code> from the
           project folder to test at full size.
         </p>
-      </section>
-      <Judge id={e.id} />
-    </main>
+      </div>
+    </div>
   );
+
+  // LeetCode-style workspace: description on the left, code and tests on the right.
+  return <Workspace id={e.id} left={description} />;
 }
