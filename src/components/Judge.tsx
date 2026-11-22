@@ -115,6 +115,10 @@ export function Judge({ id }: { id: string }) {
   const [mode, setMode] = useState<"run" | "submit">("run");
   const [busy, setBusy] = useState(false);
   const [selected, setSelected] = useState(0);
+  const [open, setOpen] = useState(false);
+  const [panelH, setPanelH] = useState<number | null>(null); // results panel height in px (desktop); null = default
+  const workspace = useRef<HTMLDivElement>(null);
+  const panel = useRef<HTMLDivElement>(null);
   const cache = useRef(new Map<string, string>());
 
   useEffect(() => {
@@ -145,6 +149,7 @@ export function Judge({ id }: { id: string }) {
     setBusy(true);
     setMode(which);
     setSelected(0);
+    setOpen(true);
     let tests: Test[];
     try {
       const manifest: Manifest = JSON.parse(await fetchText(`${id}/manifest.json`));
@@ -226,6 +231,33 @@ export function Judge({ id }: { id: string }) {
     setBusy(false);
   }
 
+  const clampH = (h: number) => {
+    const total = workspace.current?.clientHeight ?? 800;
+    return Math.max(96, Math.min(h, total - 160)); // keep some editor visible
+  };
+  const startResize = (e: React.PointerEvent) => {
+    e.preventDefault();
+    const startY = e.clientY;
+    const startH = panel.current?.offsetHeight ?? 300;
+    const move = (ev: PointerEvent) => setPanelH(clampH(startH - (ev.clientY - startY)));
+    const up = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+    document.body.style.cursor = "row-resize";
+    document.body.style.userSelect = "none";
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
+  const resizeByKey = (e: React.KeyboardEvent) => {
+    if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+    e.preventDefault();
+    const h = panel.current?.offsetHeight ?? 300;
+    setPanelH(clampH(h + (e.key === "ArrowUp" ? 32 : -32)));
+  };
+
   const done = !!results && !busy;
   const passed = results?.filter((r) => r.verdict === "AC").length ?? 0;
   const allPassed = done && passed === results!.length;
@@ -233,7 +265,7 @@ export function Judge({ id }: { id: string }) {
   const current = results?.[selected];
 
   return (
-    <div className="flex min-h-0 flex-col bg-white lg:h-full">
+    <div ref={workspace} className="flex min-h-0 flex-col bg-white lg:h-full">
       {/* toolbar */}
       <div className="flex items-center justify-between border-b border-line px-4 py-2">
         <span className="rounded-md border border-line px-2.5 py-1 text-[13px] font-medium">C++17</span>
@@ -260,68 +292,112 @@ export function Judge({ id }: { id: string }) {
       />
 
       {/* results */}
-      {results && (
-        <div className="shrink-0 overflow-auto border-b border-line px-4 py-4 lg:max-h-[50%]">
-          {done && (
-            <div className="mb-4">
-              <p className={`text-lg font-bold ${allPassed ? "text-easy" : "text-hard"}`}>
-                {allPassed
-                  ? mode === "run"
-                    ? "Congratulations! You passed the sample test cases."
-                    : "Congratulations! You passed all test cases."
-                  : LABEL[firstBad?.verdict ?? "WA"]}
+      {results && open && (
+        <div
+          role="separator"
+          aria-orientation="horizontal"
+          aria-label="Resize the results panel"
+          tabIndex={0}
+          onPointerDown={startResize}
+          onKeyDown={resizeByKey}
+          onDoubleClick={() => setPanelH(null)}
+          title="Drag to resize · double-click to reset"
+          className="hidden h-2.5 shrink-0 cursor-row-resize touch-none items-center justify-center border-b border-line bg-[#f3f5f7] outline-none transition-colors hover:bg-[#e8eef6] focus-visible:bg-[#e8eef6] lg:flex"
+        >
+          <span className="h-1 w-10 rounded-full bg-[#c2c7d0]" />
+        </div>
+      )}
+      {results && open && (
+        <div
+          ref={panel}
+          style={{ "--results-h": panelH ? `${panelH}px` : "45%" } as React.CSSProperties}
+          className="shrink-0 overflow-auto border-b border-line px-4 pb-4 pt-3 lg:h-[var(--results-h)]"
+        >
+          <div className="flex items-start justify-between gap-3">
+            {done ? (
+              <div>
+                <p className={`text-lg font-bold ${allPassed ? "text-easy" : "text-hard"}`}>
+                  {allPassed
+                    ? mode === "run"
+                      ? "Congratulations! You passed the sample test cases."
+                      : "Congratulations! You passed all test cases."
+                    : LABEL[firstBad?.verdict ?? "WA"]}
+                </p>
+                <p className="mt-0.5 text-[13px] text-muted">
+                  {passed}/{results.length} test cases passed
+                  {allPassed && mode === "run" ? ". Click Submit Code to run all tests." : ""}
+                </p>
+              </div>
+            ) : (
+              <p className="py-1 text-sm font-bold text-muted">
+                {mode === "run" ? "Running the sample test cases…" : "Judging all test cases…"}
               </p>
-              <p className="mt-0.5 text-[13px] text-muted">
-                {passed}/{results.length} test cases passed
-                {allPassed && mode === "run" ? ". Click Submit Code to run all tests." : ""}
-              </p>
+            )}
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              aria-label="Close results"
+              title="Close"
+              className="grid size-8 shrink-0 place-items-center rounded-md text-muted transition-colors hover:bg-soft hover:text-fg"
+            >
+              <svg viewBox="0 0 16 16" className="size-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+                <path d="M4 4l8 8M12 4l-8 8" />
+              </svg>
+            </button>
+          </div>
+
+          {/* test cases as tabs in one row */}
+          <div role="tablist" className="mt-3 flex flex-wrap gap-x-1 border-b border-line">
+            {results.map((r, i) => (
+              <button
+                key={r.name}
+                type="button"
+                role="tab"
+                aria-selected={i === selected}
+                onClick={() => setSelected(i)}
+                className={`-mb-px flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3 py-2 text-[13px] transition-colors ${
+                  i === selected ? "border-[#1ba94c] font-bold text-fg" : "border-transparent text-muted hover:text-fg"
+                }`}
+              >
+                <Icon v={r.verdict} />
+                {r.name}
+              </button>
+            ))}
+          </div>
+
+          {current && (
+            <div className="mt-4 space-y-3">
+              <Block title="Compiler Message">
+                {current.verdict === "waiting" || current.verdict === "running"
+                  ? LABEL[current.verdict] + "…"
+                  : current.verdict === "skipped"
+                    ? "Not run, because an earlier test case failed."
+                    : `${current.verdict === "AC" ? "" : LABEL[current.verdict] + "\n"}${current.message ?? ""}`.trim()}
+                {current.ms !== undefined ? `\n(${current.ms} ms)` : ""}
+              </Block>
+              {current.input !== undefined ? (
+                <Block title="Input (stdin)">{current.input}</Block>
+              ) : (
+                current.inputBytes > 0 && (
+                  <p className="text-[13px] text-muted">Input is {(current.inputBytes / 1e6).toFixed(1)} MB, too large to show.</p>
+                )
+              )}
+              {current.got !== undefined && <Block title="Your Output (stdout)">{current.got || " "}</Block>}
+              {current.expected !== undefined && <Block title="Expected Output">{current.expected}</Block>}
             </div>
           )}
-          <div className="flex flex-col gap-4 md:flex-row">
-            <ul className="flex shrink-0 gap-1 overflow-x-auto md:w-40 md:flex-col md:overflow-visible">
-              {results.map((r, i) => (
-                <li key={r.name}>
-                  <button
-                    type="button"
-                    onClick={() => setSelected(i)}
-                    className={`flex w-full items-center gap-2 whitespace-nowrap rounded-md px-3 py-2 text-left text-[13px] transition-colors ${
-                      i === selected ? "bg-[#e8eef6] font-bold text-fg" : "text-muted hover:bg-soft"
-                    }`}
-                  >
-                    <Icon v={r.verdict} />
-                    {r.name}
-                  </button>
-                </li>
-              ))}
-            </ul>
-            {current && (
-              <div className="min-w-0 flex-1 space-y-3">
-                <Block title="Compiler Message">
-                  {current.verdict === "waiting" || current.verdict === "running"
-                    ? LABEL[current.verdict] + "…"
-                    : current.verdict === "skipped"
-                      ? "Not run, because an earlier test case failed."
-                      : `${current.verdict === "AC" ? "" : LABEL[current.verdict] + "\n"}${current.message ?? ""}`.trim()}
-                  {current.ms !== undefined ? `\n(${current.ms} ms)` : ""}
-                </Block>
-                {current.input !== undefined ? (
-                  <Block title="Input (stdin)">{current.input}</Block>
-                ) : (
-                  current.inputBytes > 0 && (
-                    <p className="text-[13px] text-muted">Input is {(current.inputBytes / 1e6).toFixed(1)} MB, too large to show.</p>
-                  )
-                )}
-                {current.got !== undefined && <Block title="Your Output (stdout)">{current.got || " "}</Block>}
-                {current.expected !== undefined && <Block title="Expected Output">{current.expected}</Block>}
-              </div>
-            )}
-          </div>
         </div>
       )}
 
       {/* actions */}
       <div className="flex shrink-0 items-center justify-between gap-3 px-4 py-3">
-        <span className="hidden text-xs text-muted sm:inline">Runs on godbolt.org (Compiler Explorer)</span>
+        {results && !open ? (
+          <button type="button" onClick={() => setOpen(true)} className="text-xs font-bold text-link hover:underline">
+            Show results ({passed}/{results.length})
+          </button>
+        ) : (
+          <span className="hidden text-xs text-muted sm:inline">Runs on godbolt.org (Compiler Explorer)</span>
+        )}
         <div className="ml-auto flex gap-2">
           <button
             type="button"

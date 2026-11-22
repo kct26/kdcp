@@ -3,7 +3,7 @@ import Link from "next/link";
 export function Header() {
   return (
     <header className="sticky top-0 z-20 border-b-[3px] border-brand bg-header">
-      <div className="mx-auto flex h-14 max-w-6xl items-center px-4 sm:px-6">
+      <div className="flex h-14 items-center px-4 sm:px-5">
         <Link
           href="/"
           aria-label="KDCP home"
