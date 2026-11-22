@@ -24,24 +24,33 @@ export default async function ExtraPage({ params }: Props) {
   const lesson = getTopic(e.lesson);
   const html = await renderMarkdown(e.body);
 
+  // Two panels like HackerRank: statement on the left, editor on the right.
+  // On large screens both fill the window below the header (56px + 3px stripe) and scroll separately.
   return (
-    <main>
-      <BackButton />
-      <p className="mt-8 font-mono text-xs text-muted">
-        Session {e.session} extra ·{" "}
-        <Link href={`/learn/${e.lesson}`} className="hover:text-fg hover:underline hover:underline-offset-4">
-          {lesson.title}
-        </Link>
-      </p>
-      <h1 className="mt-2 text-3xl font-bold tracking-tight">{e.title}</h1>
-
-      <article className="prose mt-8" dangerouslySetInnerHTML={{ __html: html }} />
-
+    <main className="lg:grid lg:h-[calc(100dvh-59px)] lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
+      <section className="min-h-0 overflow-y-auto border-line bg-white lg:border-r">
+        <div className="border-b border-line px-6 pt-4">
+          <div className="flex items-center gap-3">
+            <BackButton />
+            <p className="truncate font-mono text-xs text-muted">
+              Session {e.session} extra ·{" "}
+              <Link href={`/learn/${e.lesson}`} className="hover:text-fg hover:underline hover:underline-offset-4">
+                {lesson.title}
+              </Link>
+            </p>
+          </div>
+          <h1 className="mt-4 text-2xl font-bold tracking-tight">{e.title}</h1>
+          <nav className="mt-3 flex gap-6 text-sm">
+            <span className="border-b-2 border-[#1ba94c] pb-2 font-bold">Problem</span>
+          </nav>
+        </div>
+        <article className="prose px-6 py-6" dangerouslySetInnerHTML={{ __html: html }} />
+        <p className="px-6 pb-8 text-xs text-muted">
+          Prefer your own machine? Run <code className="font-mono">python3 judge/judge.py {e.id} my.cpp</code> from the
+          project folder to test at full size.
+        </p>
+      </section>
       <Judge id={e.id} />
-      <p className="mt-3 text-xs text-muted">
-        Prefer your own machine? Run <code className="font-mono">python3 judge/judge.py {e.id} my.cpp</code> from the
-        project folder to test at full size.
-      </p>
     </main>
   );
 }

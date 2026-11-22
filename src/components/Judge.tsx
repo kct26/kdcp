@@ -2,24 +2,35 @@
 import { useEffect, useRef, useState } from "react";
 import { CodeEditor } from "./CodeEditor";
 
-/* Web judge: compiles and runs the submitted C++ on Compiler Explorer (godbolt.org)
-   against tests generated at build time by judge/web/build_tests.py. */
+/* HackerRank-style workspace: editor, Run Code (samples) and Submit Code (all tests).
+   Code is compiled and run on Compiler Explorer (godbolt.org) against tests generated
+   at build time by judge/web/build_tests.py. */
 
 type Test = { name: string; input: string; bytes: number; output?: string; count?: number; hash?: string };
 type Manifest = { id: string; tests: Test[] };
 type Verdict = "waiting" | "skipped" | "running" | "AC" | "WA" | "TLE" | "RE" | "CE" | "ERR";
-type Row = { name: string; verdict: Verdict; ms?: number };
+type Result = {
+  name: string;
+  verdict: Verdict;
+  ms?: number;
+  input?: string; // shown when the test is small
+  inputBytes: number;
+  expected?: string;
+  got?: string;
+  message?: string;
+};
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const COMPILER = "g142"; // GCC 14.2
 const TIME_LIMIT_MS = 3000;
+const SHOW_LIMIT = 6000; // characters of input/output shown per test
 const TEMPLATE = `#include <bits/stdc++.h>
 using namespace std;
 
 int main() {
     ios::sync_with_stdio(false);
     cin.tie(nullptr);
-    
+
     return 0;
 }
 `;
@@ -29,26 +40,16 @@ const LABEL: Record<Verdict, string> = {
   skipped: "Not run",
   running: "Running",
   AC: "Accepted",
-  WA: "Wrong answer",
-  TLE: "Time limit exceeded",
-  RE: "Runtime error",
-  CE: "Compile error",
-  ERR: "Judge unavailable",
-};
-const COLOR: Record<Verdict, string> = {
-  waiting: "bg-line text-muted",
-  skipped: "bg-line text-muted",
-  running: "bg-head text-head-fg",
-  AC: "bg-easy text-white",
-  WA: "bg-hard text-white",
-  TLE: "bg-medium text-white",
-  RE: "bg-hard text-white",
-  CE: "bg-hard text-white",
-  ERR: "bg-muted text-white",
+  WA: "Wrong Answer",
+  TLE: "Time Limit Exceeded",
+  RE: "Runtime Error",
+  CE: "Compilation Error",
+  ERR: "Judge Unavailable",
 };
 
 const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*[A-Za-z]/g, "");
 const lines = (a?: { text: string }[]) => (a ?? []).map((l) => l.text).join("\n");
+const clip = (s: string) => (s.length > SHOW_LIMIT ? s.slice(0, SHOW_LIMIT) + "\n…" : s);
 
 async function runOnCompilerExplorer(source: string, stdin: string) {
   const res = await fetch(`https://godbolt.org/api/compiler/${COMPILER}/compile`, {
@@ -79,13 +80,41 @@ function firstDiff(expected: string[], got: string[]) {
   return `Expected ${expected.length} tokens, got ${got.length}.`;
 }
 
+function Icon({ v }: { v: Verdict }) {
+  if (v === "AC")
+    return (
+      <svg viewBox="0 0 16 16" className="size-4 shrink-0 text-easy" fill="currentColor" aria-hidden>
+        <path d="M8 1a7 7 0 100 14A7 7 0 008 1zm3.3 5.2l-3.8 4.3a.75.75 0 01-1.1 0L4.7 8.8a.75.75 0 111.1-1l1.2 1.3 3.2-3.6a.75.75 0 111.1 1z" />
+      </svg>
+    );
+  if (v === "running")
+    return <span className="size-3.5 shrink-0 animate-spin rounded-full border-2 border-head border-t-transparent" />;
+  if (v === "waiting" || v === "skipped") return <span className="size-3.5 shrink-0 rounded-full border-2 border-line" />;
+  return (
+    <svg viewBox="0 0 16 16" className={`size-4 shrink-0 ${v === "TLE" ? "text-medium" : "text-hard"}`} fill="currentColor" aria-hidden>
+      <path d="M8 1a7 7 0 100 14A7 7 0 008 1zm2.5 8.4a.75.75 0 11-1.1 1.1L8 9.1l-1.4 1.4a.75.75 0 11-1.1-1.1L6.9 8 5.5 6.6a.75.75 0 111.1-1.1L8 6.9l1.4-1.4a.75.75 0 111.1 1.1L9.1 8l1.4 1.4z" />
+    </svg>
+  );
+}
+
+function Block({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="mb-1.5 text-[13px] font-bold text-fg">{title}</p>
+      <pre className="max-h-48 overflow-auto rounded-md border border-line bg-[#f6f7f9] px-3 py-2 font-mono text-[13px] leading-relaxed whitespace-pre-wrap">
+        {children}
+      </pre>
+    </div>
+  );
+}
+
 export function Judge({ id }: { id: string }) {
   const key = `kdcp-code:${id}`;
   const [code, setCode] = useState(TEMPLATE);
-  const [rows, setRows] = useState<Row[]>([]);
+  const [results, setResults] = useState<Result[] | null>(null);
+  const [mode, setMode] = useState<"run" | "submit">("run");
   const [busy, setBusy] = useState(false);
-  const [final, setFinal] = useState<Verdict | null>(null);
-  const [detail, setDetail] = useState<{ text: string; input?: string } | null>(null);
+  const [selected, setSelected] = useState(0);
   const cache = useRef(new Map<string, string>());
 
   useEffect(() => {
@@ -102,7 +131,7 @@ export function Judge({ id }: { id: string }) {
     } catch {}
   };
 
-  const text = async (path: string) => {
+  const fetchText = async (path: string) => {
     if (!cache.current.has(path)) {
       const r = await fetch(`${BASE}/judge/${path}`);
       if (!r.ok) throw new Error(`Could not load ${path}`);
@@ -111,157 +140,207 @@ export function Judge({ id }: { id: string }) {
     return cache.current.get(path)!;
   };
 
-  async function submit() {
+  async function judge(which: "run" | "submit") {
+    if (busy) return;
     setBusy(true);
-    setFinal(null);
-    setDetail(null);
-    let manifest: Manifest;
+    setMode(which);
+    setSelected(0);
+    let tests: Test[];
     try {
-      manifest = JSON.parse(await text(`${id}/manifest.json`));
+      const manifest: Manifest = JSON.parse(await fetchText(`${id}/manifest.json`));
+      tests = which === "run" ? manifest.tests.filter((t) => t.name.startsWith("Sample")) : manifest.tests;
     } catch {
-      setFinal("ERR");
-      setDetail({ text: "The tests for this problem could not be loaded." });
+      setResults([{ name: "Tests", verdict: "ERR", inputBytes: 0, message: "The tests for this problem could not be loaded." }]);
       setBusy(false);
       return;
     }
-    const table: Row[] = manifest.tests.map((t) => ({ name: t.name, verdict: "waiting" }));
-    setRows([...table]);
-    const update = (i: number, r: Partial<Row>) => {
+    const table: Result[] = tests.map((t) => ({ name: t.name, verdict: "waiting", inputBytes: t.bytes }));
+    setResults([...table]);
+    const update = (i: number, r: Partial<Result>) => {
       table[i] = { ...table[i], ...r };
-      setRows([...table]);
+      setResults([...table]);
     };
 
-    let verdict: Verdict = "AC";
-    for (let i = 0; i < manifest.tests.length && verdict === "AC"; i++) {
-      const t = manifest.tests[i];
+    let failed = false;
+    for (let i = 0; i < tests.length && !failed; i++) {
+      const t = tests[i];
       update(i, { verdict: "running" });
+      setSelected(i);
       try {
-        const stdin = await text(`${id}/${t.input}`);
+        const stdin = await fetchText(`${id}/${t.input}`);
         const big = t.hash !== undefined;
-        // Large outputs are hashed inside the program, since the runner returns at most 32 KB of output.
-        const source = big ? `${code}\n${await text("wrapper_tail.cpp")}` : code;
+        // Large outputs are hashed inside the program (wrapper_tail.cpp): the runner returns at most 32 KB.
+        const source = big ? `${code}\n${await fetchText("wrapper_tail.cpp")}` : code;
         const r = await runOnCompilerExplorer(source, stdin);
         const ms = r.execTime ? Number(r.execTime) : undefined;
+        const shown = { input: big ? undefined : clip(stdin), expected: big ? undefined : clip(t.output ?? "") };
+        const out = lines(r.stdout);
 
         if (r.buildResult?.code) {
-          verdict = "CE";
-          setDetail({ text: stripAnsi(lines(r.buildResult.stderr)) });
+          update(i, { verdict: "CE", ms, message: stripAnsi(lines(r.buildResult.stderr)), ...shown });
+          failed = true;
         } else if (r.timedOut || (ms ?? 0) > TIME_LIMIT_MS) {
-          verdict = "TLE";
-          setDetail({ text: `Your program ran longer than ${TIME_LIMIT_MS / 1000} s on ${t.name.toLowerCase()}.` });
+          update(i, { verdict: "TLE", ms, message: `Your program ran longer than ${TIME_LIMIT_MS / 1000} seconds.`, ...shown });
+          failed = true;
         } else if (r.code !== 0) {
-          verdict = "RE";
-          setDetail({ text: `Exit code ${r.code}.\n${stripAnsi(lines(r.stderr))}`.trim(), input: big ? undefined : stdin });
+          update(i, {
+            verdict: "RE",
+            ms,
+            message: `Exit code ${r.code}\n${stripAnsi(lines(r.stderr))}`.trim(),
+            got: big ? undefined : clip(out),
+            ...shown,
+          });
+          failed = true;
         } else if (big) {
-          const m = lines(r.stdout).match(/KDCP (\d+) ([0-9a-f]{16})/);
-          if (!m || Number(m[1]) !== t.count || m[2] !== t.hash) {
-            verdict = "WA";
-            setDetail({
-              text:
-                m && Number(m[1]) !== t.count
-                  ? `Expected ${t.count} tokens, got ${m[1]}.`
-                  : "Your output differs from the expected output (this test is too large to show the difference).",
-            });
-          }
+          const m = out.match(/KDCP (\d+) ([0-9a-f]{16})/);
+          const ok = !!m && Number(m[1]) === t.count && m[2] === t.hash;
+          update(i, {
+            verdict: ok ? "AC" : "WA",
+            ms,
+            message: ok
+              ? "Your output matches the expected output."
+              : m && Number(m[1]) !== t.count
+                ? `Expected ${t.count} tokens, got ${m[1]}.`
+                : "Your output differs from the expected output. This test is too large to show the difference.",
+          });
+          failed = !ok;
         } else {
-          if (r.truncated) {
-            verdict = "WA";
-            setDetail({ text: "Your program printed far more output than expected." });
-          } else {
-            const got = lines(r.stdout).split(/\s+/).filter(Boolean);
-            const exp = (t.output ?? "").split(/\s+/).filter(Boolean);
-            if (got.length !== exp.length || got.some((g, k) => g !== exp[k])) {
-              verdict = "WA";
-              setDetail({ text: firstDiff(exp, got), input: stdin.length <= 4000 ? stdin : undefined });
-            }
-          }
+          const got = out.split(/\s+/).filter(Boolean);
+          const exp = (t.output ?? "").split(/\s+/).filter(Boolean);
+          const ok = !r.truncated && got.length === exp.length && got.every((g, k) => g === exp[k]);
+          update(i, {
+            verdict: ok ? "AC" : "WA",
+            ms,
+            got: clip(out),
+            message: ok ? "Success" : r.truncated ? "Your program printed far more output than expected." : firstDiff(exp, got),
+            ...shown,
+          });
+          failed = !ok;
         }
-        update(i, { verdict, ms });
       } catch (e) {
-        verdict = "ERR";
-        update(i, { verdict });
-        setDetail({ text: `Could not reach the runner: ${(e as Error).message}. Try again in a moment.` });
+        update(i, { verdict: "ERR", message: `Could not reach the runner: ${(e as Error).message}. Try again in a moment.` });
+        failed = true;
       }
     }
     table.forEach((r, i) => r.verdict === "waiting" && update(i, { verdict: "skipped" }));
-    setFinal(verdict);
     setBusy(false);
   }
 
-
-  const passed = rows.filter((r) => r.verdict === "AC").length;
+  const done = !!results && !busy;
+  const passed = results?.filter((r) => r.verdict === "AC").length ?? 0;
+  const allPassed = done && passed === results!.length;
+  const firstBad = results?.find((r) => !["AC", "skipped", "waiting"].includes(r.verdict));
+  const current = results?.[selected];
 
   return (
-    <section className="mt-14 rounded-xl border border-line bg-card p-5 shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-[1.05rem] font-bold tracking-tight">Submit</h2>
-        <span className="rounded-md border border-line px-2 py-0.5 font-mono text-[11px] text-muted">
-          C++17 · GCC 14 · -O2 · {TIME_LIMIT_MS / 1000} s
-        </span>
+    <div className="flex min-h-0 flex-col bg-white lg:h-full">
+      {/* toolbar */}
+      <div className="flex items-center justify-between border-b border-line px-4 py-2">
+        <span className="rounded-md border border-line px-2.5 py-1 text-[13px] font-medium">C++17</span>
+        <div className="flex items-center gap-3 text-xs text-muted">
+          <span className="hidden sm:inline">GCC 14 · -O2 · {TIME_LIMIT_MS / 1000} s</span>
+          <button
+            type="button"
+            onClick={() => save(TEMPLATE)}
+            disabled={busy}
+            title="Reset to the starter code"
+            className="rounded-md border border-line px-2.5 py-1 text-fg transition-colors hover:bg-soft"
+          >
+            Reset
+          </button>
+        </div>
       </div>
 
-      <CodeEditor value={code} onChange={save} onSubmit={() => !busy && submit()} />
+      {/* editor */}
+      <CodeEditor
+        value={code}
+        onChange={save}
+        onSubmit={() => judge("submit")}
+        className="h-[26rem] border-b border-line lg:h-auto lg:flex-1"
+      />
 
-      <div className="mt-3 flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={submit}
-          disabled={busy}
-          className="rounded-full bg-easy px-6 py-2 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-60"
-        >
-          {busy ? "Judging…" : "Submit"}
-        </button>
-        <button
-          type="button"
-          onClick={() => save(TEMPLATE)}
-          disabled={busy}
-          className="rounded-full border border-line px-4 py-2 text-sm text-muted transition-colors hover:text-fg"
-        >
-          Reset code
-        </button>
-        <span className="text-xs text-muted">Code is compiled and run on godbolt.org (Compiler Explorer).</span>
-      </div>
-
-      {rows.length > 0 && (
-        <div className="mt-5">
-          {final && (
-            <div className={`mb-3 flex items-center justify-between rounded-lg px-4 py-2.5 text-sm font-bold ${COLOR[final]}`}>
-              <span>{LABEL[final]}</span>
-              <span className="font-mono text-xs font-normal opacity-90">
-                {passed}/{rows.length} tests
-              </span>
+      {/* results */}
+      {results && (
+        <div className="shrink-0 overflow-auto border-b border-line px-4 py-4 lg:max-h-[50%]">
+          {done && (
+            <div className="mb-4">
+              <p className={`text-lg font-bold ${allPassed ? "text-easy" : "text-hard"}`}>
+                {allPassed
+                  ? mode === "run"
+                    ? "Congratulations! You passed the sample test cases."
+                    : "Congratulations! You passed all test cases."
+                  : LABEL[firstBad?.verdict ?? "WA"]}
+              </p>
+              <p className="mt-0.5 text-[13px] text-muted">
+                {passed}/{results.length} test cases passed
+                {allPassed && mode === "run" ? ". Click Submit Code to run all tests." : ""}
+              </p>
             </div>
           )}
-          <div className="overflow-hidden rounded-lg border border-line">
-            <table className="w-full text-sm">
-              <tbody className="divide-y divide-line">
-                {rows.map((r) => (
-                  <tr key={r.name}>
-                    <td className="py-2 pl-4">{r.name}</td>
-                    <td className="py-2 text-right font-mono text-xs text-muted">{r.ms !== undefined ? `${r.ms} ms` : ""}</td>
-                    <td className="py-2 pl-3 pr-4 text-right">
-                      <span className={`inline-block rounded-full px-2.5 py-0.5 text-[11px] font-medium ${COLOR[r.verdict]}`}>
-                        {LABEL[r.verdict]}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="flex flex-col gap-4 md:flex-row">
+            <ul className="flex shrink-0 gap-1 overflow-x-auto md:w-40 md:flex-col md:overflow-visible">
+              {results.map((r, i) => (
+                <li key={r.name}>
+                  <button
+                    type="button"
+                    onClick={() => setSelected(i)}
+                    className={`flex w-full items-center gap-2 whitespace-nowrap rounded-md px-3 py-2 text-left text-[13px] transition-colors ${
+                      i === selected ? "bg-[#e8eef6] font-bold text-fg" : "text-muted hover:bg-soft"
+                    }`}
+                  >
+                    <Icon v={r.verdict} />
+                    {r.name}
+                  </button>
+                </li>
+              ))}
+            </ul>
+            {current && (
+              <div className="min-w-0 flex-1 space-y-3">
+                <Block title="Compiler Message">
+                  {current.verdict === "waiting" || current.verdict === "running"
+                    ? LABEL[current.verdict] + "…"
+                    : current.verdict === "skipped"
+                      ? "Not run, because an earlier test case failed."
+                      : `${current.verdict === "AC" ? "" : LABEL[current.verdict] + "\n"}${current.message ?? ""}`.trim()}
+                  {current.ms !== undefined ? `\n(${current.ms} ms)` : ""}
+                </Block>
+                {current.input !== undefined ? (
+                  <Block title="Input (stdin)">{current.input}</Block>
+                ) : (
+                  current.inputBytes > 0 && (
+                    <p className="text-[13px] text-muted">Input is {(current.inputBytes / 1e6).toFixed(1)} MB, too large to show.</p>
+                  )
+                )}
+                {current.got !== undefined && <Block title="Your Output (stdout)">{current.got || " "}</Block>}
+                {current.expected !== undefined && <Block title="Expected Output">{current.expected}</Block>}
+              </div>
+            )}
           </div>
-          {detail && (
-            <div className="mt-3 space-y-2">
-              <pre className="overflow-x-auto whitespace-pre-wrap rounded-lg border border-line bg-[#f6f7f9] p-3 font-mono text-xs">{detail.text}</pre>
-              {detail.input && (
-                <>
-                  <p className="text-xs font-bold">Input of the failed test</p>
-                  <pre className="max-h-56 overflow-auto rounded-lg border border-line bg-[#f6f7f9] p-3 font-mono text-xs">{detail.input}</pre>
-                </>
-              )}
-            </div>
-          )}
         </div>
       )}
-    </section>
+
+      {/* actions */}
+      <div className="flex shrink-0 items-center justify-between gap-3 px-4 py-3">
+        <span className="hidden text-xs text-muted sm:inline">Runs on godbolt.org (Compiler Explorer)</span>
+        <div className="ml-auto flex gap-2">
+          <button
+            type="button"
+            onClick={() => judge("run")}
+            disabled={busy}
+            className="rounded-md border border-[#c2c7d0] bg-white px-4 py-2 text-sm font-bold text-fg transition-colors hover:bg-soft disabled:opacity-60"
+          >
+            {busy && mode === "run" ? "Running…" : "Run Code"}
+          </button>
+          <button
+            type="button"
+            onClick={() => judge("submit")}
+            disabled={busy}
+            className="rounded-md bg-[#1ba94c] px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-[#178f41] disabled:opacity-60"
+          >
+            {busy && mode === "submit" ? "Judging…" : "Submit Code"}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }

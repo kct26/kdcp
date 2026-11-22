@@ -12,10 +12,12 @@ export function CodeEditor({
   value,
   onChange,
   onSubmit,
+  className = "",
 }: {
   value: string;
   onChange: (v: string) => void;
   onSubmit: () => void;
+  className?: string;
 }) {
   const host = useRef<HTMLDivElement>(null);
   const view = useRef<EditorView | null>(null);
@@ -42,14 +44,13 @@ export function CodeEditor({
             if (u.docChanged) callbacks.current.onChange(u.state.doc.toString());
           }),
           EditorView.theme({
-            "&": { fontSize: "13px", backgroundColor: "#f6f7f9", maxHeight: "36rem" },
+            "&": { fontSize: "14px", backgroundColor: "#ffffff", height: "100%" },
             "&.cm-focused": { outline: "none" },
             ".cm-scroller": { fontFamily: "var(--font-mono)", lineHeight: "1.65", overflow: "auto" },
-            ".cm-content, .cm-gutter": { minHeight: "20rem" },
             ".cm-content": { padding: "10px 0" },
-            ".cm-gutters": { backgroundColor: "#eef0f5", color: "#8a8d99", border: "none" },
-            ".cm-activeLine": { backgroundColor: "#eaedf4" },
-            ".cm-activeLineGutter": { backgroundColor: "#e1e5ef", color: "#3a3d4a" },
+            ".cm-gutters": { backgroundColor: "#f3f5f7", color: "#8a94a6", border: "none", borderRight: "1px solid #e4e8ee" },
+            ".cm-activeLine": { backgroundColor: "#f5f8fc" },
+            ".cm-activeLineGutter": { backgroundColor: "#e8eef6", color: "#39424e" },
           }),
         ],
       }),
@@ -68,10 +69,6 @@ export function CodeEditor({
   }, [value]);
 
   return (
-    <div
-      ref={host}
-      aria-label="C++ source code"
-      className="mt-4 overflow-hidden rounded-lg border border-line focus-within:border-head"
-    />
+    <div ref={host} aria-label="C++ source code" className={`min-h-0 overflow-hidden ${className}`} />
   );
 }
