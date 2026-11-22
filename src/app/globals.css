@@ -91,5 +91,10 @@ body { background: var(--bg); -webkit-font-smoothing: antialiased; }
   display: inline-block; width: 2.25rem; margin-right: 1.1rem;
   text-align: right; color: #8b8e8c;
 }
+/* sample data and shell commands: no line numbers */
+.code.sample pre code, .code.shell pre code { padding-left: 1.1rem; }
+.code.shell .line::before { content: none; }
+.code pre.plain { color: #c5c8c6; }
+.code.sample .copy { margin-left: auto; }
 
 aside, details > div { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }

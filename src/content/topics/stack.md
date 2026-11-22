@@ -29,7 +29,11 @@ int main() {
 ```
 
 ## Problems
+- [Transform the Expression](https://www.spoj.com/problems/ONP/) Easy
+- [Stacks: Balanced Brackets](https://www.hackerrank.com/challenges/ctci-balanced-brackets/problem) Easy
+- [MMASS](https://oj.vnoi.info/problem/mmass) Medium
 - [Nearest Smaller Values](https://cses.fi/problemset/task/1645) Easy
+- [Advertisement](https://cses.fi/problemset/task/1142) Medium
 - [Longest Regular Bracket Sequence](https://codeforces.com/problemset/problem/5/C) Medium
 - [Alternating Current](https://codeforces.com/problemset/problem/343/B) Medium
 - [Mike and Feet](https://codeforces.com/problemset/problem/547/B) Medium

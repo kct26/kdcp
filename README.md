@@ -30,6 +30,17 @@ Explanation in Markdown, with ```cpp code blocks.
 
 Levels are `Easy`, `Medium` or `Hard`. Topic order and months live in `src/content/roadmap.ts`.
 
+## Extra practice judge
+
+The extra problems (one set per session) have no online judge, so this repo includes one. Judge your C++ solution locally:
+
+```bash
+python3 judge/judge.py --list
+python3 judge/judge.py s2-collisions my.cpp
+```
+
+See [judge/README.md](judge/README.md) for details and how to add problems.
+
 ## Deploy
 
 - **GitHub Pages:** push to `main`, then in the repo go to *Settings → Pages → Source: GitHub Actions*. The workflow in `.github/workflows/deploy.yml` builds and publishes the site at `https://<user>.github.io/<repo>/`.

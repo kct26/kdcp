@@ -26,6 +26,10 @@ int main() {
 ```
 
 ## Problems
+- [QHEAP1](https://www.hackerrank.com/challenges/qheap1/problem) Easy
+- [Add All](https://vjudge.net/problem/UVA-10954) Easy
+- [KMIN](https://oj.vnoi.info/problem/kmin) Medium
+- [Chef and K Segments](https://www.codechef.com/problems/CHEFKO) Medium
 - [Potions (Hard Version)](https://codeforces.com/problemset/problem/1526/C2) Easy
 - [Room Allocation](https://cses.fi/problemset/task/1164) Medium
 - [Movie Festival II](https://cses.fi/problemset/task/1632) Medium

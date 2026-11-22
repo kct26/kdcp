@@ -28,6 +28,10 @@ vector<int> slidingMin(const vector<int>& a, int k) {
 ```
 
 ## Problems
+- [That is Your Queue](https://vjudge.net/problem/UVA-12207) Easy
+- [MINK](https://oj.vnoi.info/problem/mink) Easy
+- [Shortest Subsequence](https://cses.fi/problemset/task/1087) Medium
+- [Chimpanzini Bananini](https://codeforces.com/problemset/problem/2094/G) Medium
 - [Josephus Problem I](https://cses.fi/problemset/task/2162) Easy
 - [Permutation Minimization by Deque](https://codeforces.com/problemset/problem/1579/E1) Easy
 - [Array Optimization by Deque](https://codeforces.com/problemset/problem/1579/E2) Medium

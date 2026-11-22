@@ -38,15 +38,25 @@ const kattisNight: ThemeRegistration = {
 let hl: Promise<Highlighter> | undefined;
 
 export async function renderMarkdown(md: string): Promise<string> {
-  const h = await (hl ??= createHighlighter({ themes: [kattisNight], langs: ["cpp"] }));
+  const h = await (hl ??= createHighlighter({ themes: [kattisNight], langs: ["cpp", "bash"] }));
+  const escape = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   const marked = new Marked({
     renderer: {
       code({ text, lang }) {
-        const html = h.codeToHtml(text, { lang: lang || "cpp", theme: "kattis-night" });
-        return `<div class="code">
+        // Sample data blocks (```input / ```output) are shown as plain text
+        if (lang === "input" || lang === "output") {
+          return `<div class="code sample">
   <div class="code-bar">
-    <span class="code-file">solution.cpp</span>
-    <span class="code-lang">C++</span>
+    <span class="code-file">${lang === "input" ? "Sample input" : "Sample output"}</span>
+    <button type="button" class="copy" data-copy>Copy</button>
+  </div><pre class="shiki plain"><code>${escape(text)}</code></pre></div>`;
+        }
+        const shell = lang === "bash" || lang === "sh";
+        const html = h.codeToHtml(text, { lang: shell ? "bash" : lang || "cpp", theme: "kattis-night" });
+        return `<div class="code${shell ? " shell" : ""}">
+  <div class="code-bar">
+    <span class="code-file">${shell ? "Terminal" : "solution.cpp"}</span>
+    <span class="code-lang">${shell ? "Shell" : "C++"}</span>
     <button type="button" class="copy" data-copy>Copy</button>
   </div>${html}</div>`;
       },

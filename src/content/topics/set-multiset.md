@@ -32,8 +32,11 @@ int main() {
 ```
 
 ## Problems
-- [Concert Tickets](https://cses.fi/problemset/task/1091) Easy
+- [Minimum Loss](https://www.hackerrank.com/challenges/minimum-loss/problem) Easy
+- [Movie Festival II](https://cses.fi/problemset/task/1632) Medium
 - [Traffic Lights](https://cses.fi/problemset/task/1163) Medium
+- [Median](https://oj.vnoi.info/problem/icpc22_mb_h) Hard
+- [Concert Tickets](https://cses.fi/problemset/task/1091) Easy
 - [Towers](https://cses.fi/problemset/task/1073) Medium
 - [Sliding Window Median](https://cses.fi/problemset/task/1076) Medium
 - [Coffee Break](https://codeforces.com/problemset/problem/1041/C) Medium

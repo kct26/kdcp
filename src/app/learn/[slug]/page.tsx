@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { order, monthOf } from "@/content/roadmap";
-import { getTopic, neighbours } from "@/lib/content";
+import { extrasFor, getTopic, neighbours } from "@/lib/content";
 import { renderMarkdown } from "@/lib/markdown";
 import { BackButton } from "@/components/BackButton";
 
@@ -25,6 +25,7 @@ export default async function TopicPage({ params }: Props) {
   const month = monthOf(slug);
   const html = await renderMarkdown(t.body);
   const { prev, next } = neighbours(slug);
+  const extras = extrasFor(slug);
 
   return (
     <main>
@@ -65,6 +66,41 @@ export default async function TopicPage({ params }: Props) {
                     <td className="py-2.5 pr-4 text-right">
                       <span className={`inline-block rounded-full px-2.5 py-0.5 text-[11px] font-medium text-white ${levelColor[p.level]}`}>
                         {p.level}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
+      {extras.length > 0 && (
+        <section className="mt-12">
+          <h2 className="text-[1.05rem] font-medium tracking-tight">Extra practice</h2>
+          <p className="mb-4 mt-1 text-sm text-muted">Checked by the local C++ judge in this project.</p>
+          <div className="overflow-hidden rounded-xl border border-line bg-card shadow-sm">
+            <table className="w-full text-sm">
+              <thead className="bg-head text-left text-[11px] uppercase tracking-wider text-head-fg">
+                <tr>
+                  <th className="w-10 py-2 pl-4 font-bold">#</th>
+                  <th className="py-2 font-bold">Problem</th>
+                  <th className="py-2 pr-4 text-right font-bold">Judge</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {extras.map((e, i) => (
+                  <tr key={e.id} className="transition-colors hover:bg-soft">
+                    <td className="py-2.5 pl-4 font-mono text-xs text-muted">{i + 1}</td>
+                    <td className="py-2.5 pr-3">
+                      <Link href={`/extra/${e.id}`} className="text-link hover:underline hover:underline-offset-4">
+                        {e.title}
+                      </Link>
+                    </td>
+                    <td className="py-2.5 pr-4 text-right">
+                      <span className="inline-block rounded-full bg-head px-2.5 py-0.5 text-[11px] font-medium text-head-fg">
+                        Local
                       </span>
                     </td>
                   </tr>
