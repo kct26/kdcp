@@ -45,8 +45,22 @@ export default async function ExtraPage({ params }: Props) {
   );
   const solution = solutionHtml ? (
     <div className="px-6 py-6">
-      <p className="text-sm text-muted">A reference solution in C++. Try the problem yourself first.</p>
-      <div className="prose" dangerouslySetInnerHTML={{ __html: solutionHtml }} />
+      <p className="text-sm text-muted">Try the problem yourself first. The full source code is hidden below.</p>
+      <details className="group mt-4 overflow-hidden rounded-lg border border-line bg-white">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3 bg-[#f6f7f9] px-4 py-3 text-sm font-bold transition-colors hover:bg-[#eef1f5] [&::-webkit-details-marker]:hidden">
+          <span className="flex items-center gap-2">
+            <svg viewBox="0 0 16 16" className="size-4 text-[#1ba94c]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M5.5 4.5L2 8l3.5 3.5M10.5 4.5L14 8l-3.5 3.5" />
+            </svg>
+            <span className="group-open:hidden">Show full solution</span>
+            <span className="hidden group-open:inline">Hide full solution</span>
+          </span>
+          <svg viewBox="0 0 16 16" className="size-4 text-muted transition-transform group-open:rotate-180" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+            <path d="M4 6l4 4 4-4" />
+          </svg>
+        </summary>
+        <div className="prose border-t border-line px-4 pb-4" dangerouslySetInnerHTML={{ __html: solutionHtml }} />
+      </details>
     </div>
   ) : (
     <p className="px-6 py-6 text-sm text-muted">No solution yet.</p>

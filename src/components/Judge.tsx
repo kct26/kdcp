@@ -26,11 +26,29 @@ const TIME_LIMIT_MS = 3000;
 const SHOW_LIMIT = 6000; // characters of input/output shown per test
 const TEMPLATE = `#include <bits/stdc++.h>
 using namespace std;
+using ll = long long;
+using lb = long double;
+
+const int MOD = 1000000007;
+const int MAX = 200005;
+
+void solve() {
+    
+}
 
 int main() {
-    ios::sync_with_stdio(false);
-    cin.tie(nullptr);
+    ios_base::sync_with_stdio(false); cin.tie(NULL);
 
+    if (fopen("input.txt", "r")) {
+        freopen("input.txt", "r", stdin);
+        freopen("output.txt", "w", stdout);
+    }
+
+    int test = 1;
+    cin >> test;
+    while (test--) {
+        solve();
+    }
     return 0;
 }
 `;
