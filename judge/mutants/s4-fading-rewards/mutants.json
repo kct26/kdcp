@@ -1,0 +1,31 @@
+{
+ "mutants": [
+  {
+   "name": "payout may go below 0",
+   "edits": [
+    [
+     "pq.push({max(0LL, v - d), d});",
+     "pq.push({v - d, d});"
+    ]
+   ]
+  },
+  {
+   "name": "each machine pays only once",
+   "edits": [
+    [
+     "pq.push({max(0LL, v - d), d});",
+     "pq.push({0LL, d});"
+    ]
+   ]
+  },
+  {
+   "name": "total stored in int (overflows)",
+   "edits": [
+    [
+     "long long total = 0;",
+     "int total = 0;"
+    ]
+   ]
+  }
+ ]
+}

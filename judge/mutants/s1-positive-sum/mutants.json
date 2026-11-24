@@ -1,0 +1,22 @@
+{
+ "mutants": [
+  {
+   "name": "sum stored in int (overflows)",
+   "edits": [
+    [
+     "long long sum = 0;",
+     "int sum = 0;"
+    ]
+   ]
+  },
+  {
+   "name": "adds every element",
+   "edits": [
+    [
+     "if (x > 0) sum += x;",
+     "sum += x;"
+    ]
+   ]
+  }
+ ]
+}

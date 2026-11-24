@@ -1,0 +1,22 @@
+{
+ "mutants": [
+  {
+   "name": "never swaps across the border",
+   "edits": [
+    [
+     "            while (!top.empty() && !rest.empty() && *prev(rest.end()) > *top.begin()) {",
+     "            while (false) {"
+    ]
+   ]
+  },
+  {
+   "name": "ignores changes to k",
+   "edits": [
+    [
+     "} else cin >> k;",
+     "} else { long long ignored; cin >> ignored; }"
+    ]
+   ]
+  }
+ ]
+}

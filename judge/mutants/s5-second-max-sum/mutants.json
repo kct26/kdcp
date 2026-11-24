@@ -1,0 +1,22 @@
+{
+ "mutants": [
+  {
+   "name": "total stored in int (overflows)",
+   "edits": [
+    [
+     "long long total = 0;",
+     "int total = 0;"
+    ]
+   ]
+  },
+  {
+   "name": "forgets segments where the larger element is on the right",
+   "edits": [
+    [
+     "if (r1 <= n) cnt +=",
+     "if (false) cnt +="
+    ]
+   ]
+  }
+ ]
+}

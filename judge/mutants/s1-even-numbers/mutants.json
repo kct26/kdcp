@@ -1,0 +1,22 @@
+{
+ "mutants": [
+  {
+   "name": "even test x % 2 != 1 (wrong for negative odds)",
+   "edits": [
+    [
+     "if (x % 2 == 0)",
+     "if (x % 2 != 1)"
+    ]
+   ]
+  },
+  {
+   "name": "prints an empty line instead of -1",
+   "edits": [
+    [
+     "if (even.empty()) { cout << -1 << '\\n'; continue; }",
+     "if (even.empty()) { cout << '\\n'; continue; }"
+    ]
+   ]
+  }
+ ]
+}

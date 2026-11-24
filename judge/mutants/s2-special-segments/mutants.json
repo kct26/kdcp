@@ -1,0 +1,22 @@
+{
+ "mutants": [
+  {
+   "name": "forgets the first taller tower on the left",
+   "edits": [
+    [
+     "            if (!st.empty()) pairs++;           // the first taller tower to the left\n",
+     ""
+    ]
+   ]
+  },
+  {
+   "name": "counts each pop twice",
+   "edits": [
+    [
+     "{ st.pop_back(); pairs++; }",
+     "{ st.pop_back(); pairs += 2; }"
+    ]
+   ]
+  }
+ ]
+}

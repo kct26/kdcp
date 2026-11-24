@@ -1,0 +1,13 @@
+{
+ "mutants": [
+  {
+   "name": "forgets to sort before unique",
+   "edits": [
+    [
+     "        sort(a.begin(), a.end());\n",
+     ""
+    ]
+   ]
+  }
+ ]
+}

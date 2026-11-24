@@ -22,7 +22,7 @@ sys.path.insert(0, str(HERE.parent))
 import judge as J  # noqa: E402  (reuses compile/run helpers)
 
 OUT = HERE.parent.parent / "public" / "judge"
-SMALL, LARGE = 6, 2
+SMALL, LARGE = 6, 3
 MAX_INPUT = 7_000_000          # the runner rejects requests above ~8 MB
 
 

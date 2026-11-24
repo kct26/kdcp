@@ -1,0 +1,26 @@
+{
+ "mutants": [
+  {
+   "name": "depth-first (stack) instead of a queue",
+   "edits": [
+    [
+     "queue<pair<long long,int>> q;",
+     "stack<pair<long long,int>> q;"
+    ],
+    [
+     "auto [x, id] = q.front(); q.pop();",
+     "auto [x, id] = q.top(); q.pop();"
+    ]
+   ]
+  },
+  {
+   "name": "both halves rounded down",
+   "edits": [
+    [
+     "q.push({(x + 1) / 2, id});",
+     "q.push({x / 2, id});"
+    ]
+   ]
+  }
+ ]
+}

@@ -1,0 +1,22 @@
+{
+ "mutants": [
+  {
+   "name": "erases every gap of that length",
+   "edits": [
+    [
+     "gaps.erase(gaps.find(r - l));",
+     "gaps.erase(r - l);"
+    ]
+   ]
+  },
+  {
+   "name": "old gap kept when a mark splits it",
+   "edits": [
+    [
+     "                gaps.erase(gaps.find(r - l));\n",
+     ""
+    ]
+   ]
+  }
+ ]
+}

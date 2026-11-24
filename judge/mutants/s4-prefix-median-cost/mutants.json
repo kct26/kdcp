@@ -1,0 +1,22 @@
+{
+ "mutants": [
+  {
+   "name": "cost stored in int (overflows)",
+   "edits": [
+    [
+     "long long cost = (m * (long long)lo.size() - sumLo) + (sumHi - m * (long long)hi.size());",
+     "int cost = (m * (long long)lo.size() - sumLo) + (sumHi - m * (long long)hi.size());"
+    ]
+   ]
+  },
+  {
+   "name": "heaps not rebalanced when the upper half grows",
+   "edits": [
+    [
+     "            if (hi.size() > lo.size())     { long long v = hi.top(); hi.pop(); sumHi -= v; lo.push(v); sumLo += v; }\n",
+     ""
+    ]
+   ]
+  }
+ ]
+}

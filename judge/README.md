@@ -32,12 +32,25 @@ Each problem lives in `judge/problems/<id>/`:
 | `statement.md` | Statement shown on the website. The ` ```input ` / ` ```output ` blocks are the samples. |
 | `sol.cpp` | Reference solution; it defines the expected output. |
 | `gen.cpp` | Test generator: `./gen <seed> <small|large>` prints one input file. |
-| `brute.cpp` | Slow but simple solution, used to double-check `sol.cpp`. |
+| `brute.cpp` | Slow but simple solution, used to double-check `sol.cpp` (and must be too slow for the large tests). |
+| `solution.cpp` | The solution shown on the website's Solution tab, written in the class template. |
 
 Before publishing a new problem, check the reference against the brute force:
 
 ```bash
 python3 judge/judge.py <id> --stress -n 300
 ```
+
+## Are the tests strong enough?
+
+`judge/mutants/<id>/` holds wrong solutions for each problem: `bad-*.cpp` files and small edits to `sol.cpp` listed in `mutants.json` (typical mistakes: off-by-one, `int` overflow, a wrong greedy, a missing edge case). `ok-*.cpp` files are other correct solutions. This check runs all of them against the exact website tests:
+
+```bash
+python3 judge/web/build_tests.py && python3 judge/check_tests.py
+```
+
+Every wrong solution (and the slow `brute.cpp`) must fail at least one test, and `sol.cpp`, `solution.cpp` and every `ok-*.cpp` must pass them all. When someone finds a wrong solution that gets Accepted, add it as `bad-*.cpp`, then make `gen.cpp` produce inputs that catch it.
+
+Generators use only `mt19937_64` with plain modulo and their own shuffle, so the tests are identical on every platform (the site's tests are built on Linux in CI).
 
 The front matter of `statement.md` sets the title, the session, the order inside the session, and the lesson (a slug from `src/content/roadmap.ts`) where it appears under "Extra practice".

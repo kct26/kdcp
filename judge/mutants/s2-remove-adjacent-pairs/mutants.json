@@ -1,0 +1,13 @@
+{
+ "mutants": [
+  {
+   "name": "prints nothing for an empty result",
+   "edits": [
+    [
+     "cout << (st.empty() ? \"-\" : st) << '\\n';",
+     "cout << st << '\\n';"
+    ]
+   ]
+  }
+ ]
+}

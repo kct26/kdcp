@@ -1,0 +1,31 @@
+{
+ "mutants": [
+  {
+   "name": "equal sizes: only the left-mover dies",
+   "edits": [
+    [
+     "else { if (st.back() == -x) st.pop_back(); alive = false; }",
+     "else { alive = false; }"
+    ]
+   ]
+  },
+  {
+   "name": "at most one collision per element",
+   "edits": [
+    [
+     "while (alive && x < 0",
+     "if (alive && x < 0"
+    ]
+   ]
+  },
+  {
+   "name": "negatives also fight negatives",
+   "edits": [
+    [
+     "while (alive && x < 0 && !st.empty() && st.back() > 0)",
+     "while (alive && x < 0 && !st.empty() && st.back() != 0)"
+    ]
+   ]
+  }
+ ]
+}

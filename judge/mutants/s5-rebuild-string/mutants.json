@@ -1,0 +1,13 @@
+{
+ "mutants": [
+  {
+   "name": "uses only the first position of each clue",
+   "edits": [
+    [
+     "for (int x : pos[i])",
+     "for (int x : vector<int>{pos[i][0]})"
+    ]
+   ]
+  }
+ ]
+}

@@ -1,0 +1,31 @@
+{
+ "mutants": [
+  {
+   "name": "a repeated maximum counts as runner-up",
+   "edits": [
+    [
+     "else if (x < best && x > second)",
+     "else if (x <= best && x > second)"
+    ]
+   ]
+  },
+  {
+   "name": "starts from 0 instead of minus infinity",
+   "edits": [
+    [
+     "const long long NONE = LLONG_MIN;",
+     "const long long NONE = 0;"
+    ]
+   ]
+  },
+  {
+   "name": "-1 only when n == 1",
+   "edits": [
+    [
+     "cout << (second == NONE ? -1 : second)",
+     "cout << (n == 1 ? -1 : second)"
+    ]
+   ]
+  }
+ ]
+}

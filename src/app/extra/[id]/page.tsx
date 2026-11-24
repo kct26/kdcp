@@ -1,10 +1,13 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import fs from "node:fs";
+import path from "node:path";
 import { getExtras, getTopic } from "@/lib/content";
 import { renderMarkdown } from "@/lib/markdown";
 import { BackButton } from "@/components/BackButton";
 import { Judge } from "@/components/Judge";
 import { SplitView } from "@/components/SplitView";
+import { ProblemTabs } from "@/components/ProblemTabs";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -24,31 +27,45 @@ export default async function ExtraPage({ params }: Props) {
   const e = find(id);
   const lesson = getTopic(e.lesson);
   const html = await renderMarkdown(e.body);
+  const solutionFile = path.join(process.cwd(), "judge/problems", e.id, "solution.cpp");
+  const solutionHtml = fs.existsSync(solutionFile)
+    ? await renderMarkdown("```cpp\n" + fs.readFileSync(solutionFile, "utf8").trimEnd() + "\n```")
+    : "";
 
   // Two panels like HackerRank: statement on the left, editor on the right, with a draggable
   // divider between them. On large screens both fill the window below the header and scroll separately.
+  const problem = (
+    <>
+      <article className="prose px-6 py-6" dangerouslySetInnerHTML={{ __html: html }} />
+      <p className="px-6 pb-8 text-xs text-muted">
+        Prefer your own machine? Run <code className="font-mono">python3 judge/judge.py {e.id} my.cpp</code> from the
+        project folder to test at full size.
+      </p>
+    </>
+  );
+  const solution = solutionHtml ? (
+    <div className="px-6 py-6">
+      <p className="text-sm text-muted">A reference solution in C++. Try the problem yourself first.</p>
+      <div className="prose" dangerouslySetInnerHTML={{ __html: solutionHtml }} />
+    </div>
+  ) : (
+    <p className="px-6 py-6 text-sm text-muted">No solution yet.</p>
+  );
   const statement = (
     <>
-        <div className="border-b border-line px-6 pt-4">
-          <div className="flex items-center gap-3">
-            <BackButton />
-            <p className="truncate font-mono text-xs text-muted">
-              Session {e.session} extra ·{" "}
-              <Link href={`/learn/${e.lesson}`} className="hover:text-fg hover:underline hover:underline-offset-4">
-                {lesson.title}
-              </Link>
-            </p>
-          </div>
-          <h1 className="mt-4 text-2xl font-bold tracking-tight">{e.title}</h1>
-          <nav className="mt-3 flex gap-6 text-sm">
-            <span className="border-b-2 border-[#1ba94c] pb-2 font-bold">Problem</span>
-          </nav>
+      <div className="px-6 pt-4">
+        <div className="flex items-center gap-3">
+          <BackButton />
+          <p className="truncate font-mono text-xs text-muted">
+            Session {e.session} extra ·{" "}
+            <Link href={`/learn/${e.lesson}`} className="hover:text-fg hover:underline hover:underline-offset-4">
+              {lesson.title}
+            </Link>
+          </p>
         </div>
-        <article className="prose px-6 py-6" dangerouslySetInnerHTML={{ __html: html }} />
-        <p className="px-6 pb-8 text-xs text-muted">
-          Prefer your own machine? Run <code className="font-mono">python3 judge/judge.py {e.id} my.cpp</code> from the
-          project folder to test at full size.
-        </p>
+        <h1 className="mt-4 text-2xl font-bold tracking-tight">{e.title}</h1>
+      </div>
+      <ProblemTabs problem={problem} solution={solution} />
     </>
   );
   return <SplitView left={statement} right={<Judge id={e.id} />} />;

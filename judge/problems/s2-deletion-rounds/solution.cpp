@@ -1,0 +1,42 @@
+#include <bits/stdc++.h>
+using namespace std;
+using ll = long long;
+using lb = long double;
+
+const int MOD = 1000000007;
+const int MAX = 200005;
+
+int a[MAX], n;
+
+void solve() {
+    cin >> n;
+    for (int i = 0; i < n; i++) cin >> a[i];
+    stack<pair<int,int>> st;
+    int cnt = 0;
+    for (int i = 0; i < n; i++){
+        int tmp = 0;
+        while (!st.empty() && st.top().first < a[i]){
+            tmp = max(tmp + 1, st.top().second);
+            st.pop();
+        }
+        st.push({a[i], tmp});
+        cnt = max(cnt, tmp);
+    }
+    cout << cnt << "\n";
+}
+
+int main() {
+    ios_base::sync_with_stdio(false); cin.tie(NULL);
+
+    if (fopen("input.txt", "r")) {
+        freopen("input.txt", "r", stdin);
+        freopen("output.txt", "w", stdout);
+    }
+
+    int test = 1;
+    cin >> test;
+    while (test--) {
+        solve();
+    }
+    return 0;
+}

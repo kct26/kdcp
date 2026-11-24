@@ -36,4 +36,4 @@ For each test case print the reordered list on one line, separated by spaces.
 -1 0 -3 1
 ```
 
-Use a custom comparator. |aᵢ − x| can reach 2·10⁹, so compute it in `long long`.
+Use a custom comparator. |aᵢ − x| can reach 2·10⁹, just under the `int` limit, so `long long` is the safe choice.

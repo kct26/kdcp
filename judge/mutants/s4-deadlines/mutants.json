@@ -1,0 +1,22 @@
+{
+ "mutants": [
+  {
+   "name": "greedy by deadline without swapping out cheap tasks",
+   "edits": [
+    [
+     "chosen.push(w); total += w;\n            if ((long long)chosen.size() > d) { total -= chosen.top(); chosen.pop(); }",
+     "if ((long long)chosen.size() < d) { chosen.push(w); total += w; }"
+    ]
+   ]
+  },
+  {
+   "name": "total stored in int (overflows)",
+   "edits": [
+    [
+     "long long total = 0;",
+     "int total = 0;"
+    ]
+   ]
+  }
+ ]
+}

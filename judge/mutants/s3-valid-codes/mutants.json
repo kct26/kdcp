@@ -1,0 +1,31 @@
+{
+ "mutants": [
+  {
+   "name": "digits tried from 3 down to 1",
+   "edits": [
+    [
+     "for (char c = '1'; c <= '3'; c++)",
+     "for (char c = '3'; c >= '1'; c--)"
+    ]
+   ]
+  },
+  {
+   "name": "allows equal neighbours",
+   "edits": [
+    [
+     "if (c != s.back()) q.push(s + c);",
+     "q.push(s + c);"
+    ]
+   ]
+  },
+  {
+   "name": "off by one in k",
+   "edits": [
+    [
+     "cout << codes[k - 1]",
+     "cout << codes[k % K]"
+    ]
+   ]
+  }
+ ]
+}

@@ -1,0 +1,31 @@
+{
+ "mutants": [
+  {
+   "name": "every element with a larger right neighbour dies in round 1",
+   "edits": [
+    [
+     "                slowest = max(slowest, st.back().second);\n",
+     ""
+    ]
+   ]
+  },
+  {
+   "name": "equal values treated as larger",
+   "edits": [
+    [
+     "st.back().first <= a[i]",
+     "st.back().first < a[i]"
+    ]
+   ]
+  },
+  {
+   "name": "off by one in the death round",
+   "edits": [
+    [
+     "int die = st.empty() ? 0 : slowest + 1;",
+     "int die = st.empty() ? 0 : max(1, slowest);"
+    ]
+   ]
+  }
+ ]
+}

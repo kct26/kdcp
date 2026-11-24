@@ -1,0 +1,31 @@
+{
+ "mutants": [
+  {
+   "name": "seats everyone, ignores r",
+   "edits": [
+    [
+     "if ((long long)seated.size() > r)",
+     "if (false)"
+    ]
+   ]
+  },
+  {
+   "name": "greedy by r without swapping out cheap guests",
+   "edits": [
+    [
+     "seated.push(w); total += w;\n            if ((long long)seated.size() > r) { total -= seated.top(); seated.pop(); }",
+     "if ((long long)seated.size() < r) { seated.push(w); total += w; }"
+    ]
+   ]
+  },
+  {
+   "name": "total stored in int (overflows)",
+   "edits": [
+    [
+     "long long total = 0;",
+     "int total = 0;"
+    ]
+   ]
+  }
+ ]
+}

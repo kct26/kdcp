@@ -1,0 +1,22 @@
+{
+ "mutants": [
+  {
+   "name": "ends can be removed too",
+   "edits": [
+    [
+     "return round_[i] == -1 && L[i] != -1 && R[i] != -1 && a[i] == llabs(a[L[i]] - a[R[i]]);",
+     "return round_[i] == -1 && ((L[i] == -1 || R[i] == -1) ? a[i] == 0 : a[i] == llabs(a[L[i]] - a[R[i]]));"
+    ]
+   ]
+  },
+  {
+   "name": "only neighbours of the first removal are rechecked",
+   "edits": [
+    [
+     "            for (int i : del) {\n                if (L[i] != -1 && round_[L[i]] == -1) next.push_back(L[i]);",
+     "            for (int i : {del[0]}) {\n                if (L[i] != -1 && round_[L[i]] == -1) next.push_back(L[i]);"
+    ]
+   ]
+  }
+ ]
+}

@@ -1,0 +1,13 @@
+{
+ "mutants": [
+  {
+   "name": "unmatched ')' does not reset the start",
+   "edits": [
+    [
+     "if (st.empty()) st.push_back(i);",
+     "if (st.empty()) st.push_back(-1);"
+    ]
+   ]
+  }
+ ]
+}

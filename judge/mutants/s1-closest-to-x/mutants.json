@@ -1,0 +1,26 @@
+{
+ "mutants": [
+  {
+   "name": "tie broken by larger value first",
+   "edits": [
+    [
+     "return dp != dq ? dp < dq : p < q;",
+     "return dp != dq ? dp < dq : p > q;"
+    ]
+   ]
+  },
+  {
+   "name": "no tie-break (keeps input order)",
+   "edits": [
+    [
+     "sort(a.begin(), a.end(), [&]",
+     "stable_sort(a.begin(), a.end(), [&]"
+    ],
+    [
+     "return dp != dq ? dp < dq : p < q;",
+     "return dp < dq;"
+    ]
+   ]
+  }
+ ]
+}

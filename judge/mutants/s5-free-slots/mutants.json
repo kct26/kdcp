@@ -1,0 +1,31 @@
+{
+ "mutants": [
+  {
+   "name": "ignores l (takes the smallest free spot overall)",
+   "edits": [
+    [
+     "freeSpots.lower_bound(l)",
+     "freeSpots.begin()"
+    ]
+   ]
+  },
+  {
+   "name": "released spots never become free",
+   "edits": [
+    [
+     "int x; cin >> x; freeSpots.insert(x);",
+     "int x; cin >> x;"
+    ]
+   ]
+  },
+  {
+   "name": "treats r as exclusive",
+   "edits": [
+    [
+     "*it > r",
+     "*it >= r"
+    ]
+   ]
+  }
+ ]
+}

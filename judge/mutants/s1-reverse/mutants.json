@@ -1,0 +1,22 @@
+{
+ "mutants": [
+  {
+   "name": "skips the first element",
+   "edits": [
+    [
+     "for (int i = n - 1; i >= 0; i--) cout << a[i] << \" \\n\"[i == 0];",
+     "for (int i = n - 1; i >= 1; i--) cout << a[i] << \" \\n\"[i == 1];"
+    ]
+   ]
+  },
+  {
+   "name": "prints in the original order",
+   "edits": [
+    [
+     "for (int i = n - 1; i >= 0; i--) cout << a[i] << \" \\n\"[i == 0];",
+     "for (int i = 0; i < n; i++) cout << a[i] << \" \\n\"[i + 1 == n];"
+    ]
+   ]
+  }
+ ]
+}

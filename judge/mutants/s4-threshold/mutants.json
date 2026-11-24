@@ -1,0 +1,40 @@
+{
+ "mutants": [
+  {
+   "name": "splash not applied",
+   "edits": [
+    [
+     "offset += pq.top().second; pq.pop(); removed++;",
+     "pq.pop(); removed++;"
+    ]
+   ]
+  },
+  {
+   "name": "new tank ignores earlier rises",
+   "edits": [
+    [
+     "pq.push({a - offset, b});",
+     "pq.push({a, b});"
+    ]
+   ]
+  },
+  {
+   "name": "min-heap instead of max-heap",
+   "edits": [
+    [
+     "priority_queue<pair<long long,long long>> pq;",
+     "priority_queue<pair<long long,long long>, vector<pair<long long,long long>>, greater<>> pq;"
+    ]
+   ]
+  },
+  {
+   "name": "offset stored in int (overflows)",
+   "edits": [
+    [
+     "long long offset = 0;",
+     "int offset = 0;"
+    ]
+   ]
+  }
+ ]
+}
