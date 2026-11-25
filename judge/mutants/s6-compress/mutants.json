@@ -1,0 +1,35 @@
+{
+ "mutants": [
+  {
+   "name": "duplicates not removed before ranking",
+   "edits": [
+    [
+     "        v.erase(unique(v.begin(), v.end()), v.end());\n",
+     ""
+    ]
+   ]
+  },
+  {
+   "name": "ranks start from 0",
+   "edits": [
+    [
+     "- v.begin() + 1 <<",
+     "- v.begin() <<"
+    ]
+   ]
+  },
+  {
+   "name": "values read as int",
+   "edits": [
+    [
+     "vector<long long> a(n);",
+     "vector<int> a(n);"
+    ],
+    [
+     "vector<long long> v = a;",
+     "vector<long long> v(a.begin(), a.end());"
+    ]
+   ]
+  }
+ ]
+}

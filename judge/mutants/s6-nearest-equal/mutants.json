@@ -1,0 +1,31 @@
+{
+ "mutants": [
+  {
+   "name": "removes every gap of that length",
+   "edits": [
+    [
+     "if (p != -1) gaps.erase(gaps.find(i - p));",
+     "if (p != -1) gaps.erase(i - p);"
+    ]
+   ]
+  },
+  {
+   "name": "gap across a removed position not restored",
+   "edits": [
+    [
+     "            if (p != -1 && r != -1) gaps.insert(r - p);\n",
+     ""
+    ]
+   ]
+  },
+  {
+   "name": "gap split by an inserted position not removed",
+   "edits": [
+    [
+     "            if (p != -1 && r != -1) gaps.erase(gaps.find(r - p));\n",
+     ""
+    ]
+   ]
+  }
+ ]
+}

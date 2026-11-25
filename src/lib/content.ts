@@ -17,6 +17,7 @@ function judgeOf(url: string): string {
   if (host.includes("vnoi")) return "VNOJ";
   if (host.includes("codechef")) return "CodeChef";
   if (host.includes("vjudge")) return "UVa";
+  if (host.includes("dmoj")) return "DMOJ";
   return host.replace(/^www\./, "");
 }
 

@@ -1,0 +1,22 @@
+{
+ "mutants": [
+  {
+   "name": "the maximum never goes down",
+   "edits": [
+    [
+     "            if (c == best && freq[c] == 0) best--;\n",
+     ""
+    ]
+   ]
+  },
+  {
+   "name": "old difference not removed on update",
+   "edits": [
+    [
+     "            dec(b[i] - a[i]);\n",
+     ""
+    ]
+   ]
+  }
+ ]
+}

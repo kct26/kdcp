@@ -33,6 +33,9 @@ int main() {
 ## Problems
 - [Registration System](https://codeforces.com/problemset/problem/4/C) Easy
 - [Sum of Two Values](https://cses.fi/problemset/task/1640) Easy
+- [Good Subarrays](https://codeforces.com/problemset/problem/1398/C) Medium
+- [Reorder Cards](https://atcoder.jp/contests/abc213/tasks/abc213_c) Easy
+- [Bathroom Stalls](https://dmoj.ca/problem/gcj17qrc) Medium
 - [Playlist](https://cses.fi/problemset/task/1141) Easy
 - [Subarray Sums II](https://cses.fi/problemset/task/1661) Medium
 - [Subarray Divisibility](https://cses.fi/problemset/task/1662) Medium

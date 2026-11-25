@@ -1,0 +1,35 @@
+{
+ "mutants": [
+  {
+   "name": "count stored in int (overflows)",
+   "edits": [
+    [
+     "long long ans = 0;",
+     "int ans = 0;"
+    ]
+   ]
+  },
+  {
+   "name": "an element can pair with itself",
+   "edits": [
+    [
+     "auto it = cnt.find(M - x);",
+     "cnt[x]++; auto it = cnt.find(M - x);"
+    ],
+    [
+     "            cnt[x]++;\n        }",
+     "        }"
+    ]
+   ]
+  },
+  {
+   "name": "values read as int",
+   "edits": [
+    [
+     "long long x; cin >> x;",
+     "int x; cin >> x;"
+    ]
+   ]
+  }
+ ]
+}
